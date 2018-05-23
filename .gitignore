@@ -1,2 +1,7 @@
 *.o
-test_linprog2d
+*.gcda
+*.gcno
+*.gcov
+*.vgcore
+.gdb_history
+build

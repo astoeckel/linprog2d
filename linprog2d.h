@@ -41,8 +41,8 @@ enum linprog2d_status {
 	LP2D_ERROR,
 
 	/**
-	 * There is no solution to this problem, the solution space is empty. This
-	 * may happen if there are constraints that contradict each other.
+	 * There is no solution to this problem, i.e. the solution space is empty.
+	 * This may happen if there are constraints that contradict each other.
 	 */
 	LP2D_INFEASIBLE,
 
@@ -100,7 +100,7 @@ typedef void linprog2d_t;
 unsigned int linprog2d_mem_size(unsigned int capacity);
 
 /**
- * Constructs a linprog2d instance with the given capacity inplace in the
+ * Constructs a linprog2d instance with the given capacity inplace at the
  * given memory location. The required size of the memory region can be computed
  * by calling linprog2d_mem_size(). You may want to use linprog2d_create()
  * instead, which automatically allocates the required amount of memory on the
@@ -117,13 +117,16 @@ linprog2d_t *linprog2d_init(unsigned int capacity, char *mem);
 
 /**
  * Creates a new linprog2d instance that is able to represent at least n
- * constraints. The returned pointer must be freed using linprog2d_free. In
- * failure (out of memory) returns null.
+ * constraints. The returned pointer must be freed using linprog2d_free. If a
+ * failure occurs (out of memory) or the library has been compiled without
+ * linking to the C standard library (the LINPROG2D_NO_ALLOC flag is defined),
+ * returns null.
  */
 linprog2d_t *linprog2d_create(unsigned int capacity);
 
 /**
- * Frees a previously created linprog2d instance.
+ * Frees a previously created linprog2d instance. If the LINPROG2D_NO_ALLOC flag
+ * is defined, this function does nothing.
  */
 void linprog2d_free(linprog2d_t *prog);
 

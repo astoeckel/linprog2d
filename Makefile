@@ -14,18 +14,37 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-.PHONY: all test clean
+.PHONY: all test clean cov
 
-CCFLAGS := --std=c89 -Wall -Wextra -pedantic-errors
+CCFLAGS := -g -fPIC --std=c89 -Wall -Wextra -pedantic-errors
 
-all: linprog2d.o test_linprog2d test_linprog2d_c
+all: build/liblinprog2d.a build/liblinprog2d.so build/test/test_linprog2d
 
-test_linprog2d: linprog2d.c linprog2d.h
-	$(CC) $(CCFLAGS) -DLINPROG_2D_TEST -o test_linprog2d linprog2d.c -lm
+build/linprog2d.o: linprog2d.c linprog2d.h
+	mkdir -p build
+	$(CC) $(CCFLAGS) -c linprog2d.c -o build/linprog2d.o
 
-test: test_linprog2d
-	./test_linprog2d
+build/liblinprog2d.a: build/linprog2d.o
+	ar rcs build/liblinprog2d.a build/linprog2d.o
+
+build/liblinprog2d.so: build/linprog2d.o
+	gcc -shared -o build/liblinprog2d.so build/linprog2d.o -lm
+
+build/test/test_linprog2d: test/test_linprog2d.c linprog2d.c linprog2d.h
+	mkdir -p build/test
+	$(CC) $(CCFLAGS) -o build/test/test_linprog2d test/test_linprog2d.c -lm
+
+build/test/test_linprog2d_cov: test/test_linprog2d.c linprog2d.c linprog2d.h
+	mkdir -p build/test
+	$(CC) $(CCFLAGS) -O0 -fprofile-arcs -ftest-coverage -o build/test/test_linprog2d_cov test/test_linprog2d.c -lm
+
+test: build/test/test_linprog2d
+	./build/test/test_linprog2d
+
+cov: build/test/test_linprog2d_cov
+	./build/test/test_linprog2d_cov
+	gcovr -r . --html --html-details -o test_linprog2d_coverage.html
 
 clean:
-	rm -Rf *.o test_linprog2d
+	rm -Rf *.gcda *.gcno *.gcov *.vgcore build/linprog2d.o build/liblinprog2d.a build/liblinprog2d.so build/test/test_linprog2d build/test/test_linprog2d_cov test_linprog2d_coverage*.html
 
