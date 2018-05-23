@@ -78,8 +78,7 @@ static jmp_buf assert_buffer;
 			n_failed++;                                                        \
 			fprintf(stderr, ANSI_RED "[ERR]" ANSI_RESET " Test \"" #test       \
 			                         "\" failed!\n");                          \
-		}                                                                      \
-		else {                                                                 \
+		} else {                                                               \
 			n_success++;                                                       \
 			fprintf(stderr, ANSI_GREEN "[OK!]" ANSI_RESET " Test \"" #test     \
 			                           "\" successful\n");                     \
@@ -109,8 +108,7 @@ static jmp_buf assert_buffer;
  * Actual unit tests                                                          *
  ******************************************************************************/
 
-void test_feq()
-{
+void test_feq() {
 	EXPECT_TRUE(feq_(0.0, -0.0));
 	EXPECT_TRUE(feq_(0.0, 0.0));
 	EXPECT_TRUE(feq_(0.0, 1e-31));
@@ -123,8 +121,7 @@ void test_feq()
 	EXPECT_TRUE(feq_(1e-15, 1e-15 + 0.1e-30));
 }
 
-void test_memalign64()
-{
+void test_memalign64() {
 	unsigned long int i;
 	EXPECT_EQ((void *)0x0, mem_align64((void *)0x0, 0U));
 	for (i = 1; i <= 64; i++) {
@@ -135,8 +132,7 @@ void test_memalign64()
 	}
 }
 
-void test_sort()
-{
+void test_sort() {
 	double d[5];
 
 	sort(d, 0); /* Should do nothing. Check valgrind log. */
@@ -212,8 +208,7 @@ void test_sort()
 	EXPECT_EQ(7.0, d[4]);
 }
 
-void test_partition()
-{
+void test_partition() {
 	{
 		double d[20] = {5,  13, 13, 8, 9, 12, 19, 2,  1,  13,
 		                14, 10, 6,  3, 2, 3,  7,  16, 17, 16};
@@ -274,8 +269,7 @@ void test_partition()
 	}
 }
 
-void test_kth_smallest()
-{
+void test_kth_smallest() {
 	{
 		double d[1] = {2.2};
 
@@ -387,8 +381,7 @@ void test_kth_smallest()
 	}
 }
 
-void test_median()
-{
+void test_median() {
 	{
 		double d[1] = {1.2};
 		EXPECT_EQ(1.2, median(d, 1U));
@@ -449,8 +442,7 @@ void test_median()
 	}
 }
 
-void test_linprog2d_normalization_coeff()
-{
+void test_linprog2d_normalization_coeff() {
 	EXPECT_EQ(0.0, linprog2d_normalization_coeff(0.0, 0.0));
 	EXPECT_EQ(1.0, linprog2d_normalization_coeff(1.0, 0.0));
 	EXPECT_EQ(1.0, linprog2d_normalization_coeff(0.0, 1.0));
@@ -460,8 +452,7 @@ void test_linprog2d_normalization_coeff()
 	EXPECT_EQ(2.0, linprog2d_normalization_coeff(-2.0, -1.0));
 }
 
-void test_linprog2d_create_and_capacity()
-{
+void test_linprog2d_create_and_capacity() {
 	{
 		unsigned int i;
 		linprog2d_data_t *prog = linprog2d_create(128U);
@@ -507,8 +498,7 @@ void test_linprog2d_create_and_capacity()
 	}
 }
 
-void test_linprog2d_problem_too_large()
-{
+void test_linprog2d_problem_too_large() {
 	linprog2d_data_t prog;
 	linprog2d_init_internal(&prog, 128U, NULL);
 
@@ -517,8 +507,7 @@ void test_linprog2d_problem_too_large()
 	          linprog2d_solve(&prog, 0.0, 0.0, NULL, NULL, NULL, 129U).status);
 }
 
-void test_linprog2d_condition_problem_rotation()
-{
+void test_linprog2d_condition_problem_rotation() {
 	/* Manually setup the linprog2d_data_t structure */
 	linprog2d_data_t prog;
 	linprog2d_reset(&prog, 0U);
@@ -545,8 +534,7 @@ void test_linprog2d_condition_problem_rotation()
 	EXPECT_EQ(0.0, prog.R.a22);
 }
 
-void test_linprog2d_condition_problem_eliminate_invalid()
-{
+void test_linprog2d_condition_problem_eliminate_invalid() {
 	linprog2d_data_t prog;
 	double Gx, Gy, h;
 	double Gx_tar, Gy_tar, h_tar;
@@ -571,8 +559,7 @@ void test_linprog2d_condition_problem_eliminate_invalid()
 	          linprog2d_condition_problem(&prog, 1.0, 0.0, &Gx, &Gy, &h));
 }
 
-void test_linprog2d_condition_problem_offset1()
-{
+void test_linprog2d_condition_problem_offset1() {
 	/* Setup a set of constraints that form a box from (3, 4) to (5, 8). This
 	   box should be shifted to the origin by linprog2d_condition_problem,
 	   resulting in a box from (-1, -2) to (1, 2). */
@@ -607,8 +594,7 @@ void test_linprog2d_condition_problem_offset1()
 	EXPECT_EQ(6.0, prog.o.y);
 }
 
-void test_linprog2d_condition_problem_offset2()
-{
+void test_linprog2d_condition_problem_offset2() {
 	/* Setup a set of constraints that form a box rotated by 45°. The centre
 	   of this box is at (4.5, 4.5). */
 	linprog2d_data_t prog;
@@ -642,8 +628,7 @@ void test_linprog2d_condition_problem_offset2()
 	EXPECT_EQ(4.5, prog.o.y);
 }
 
-void test_linprog2d_condition_problem_offset_and_rescale_single()
-{
+void test_linprog2d_condition_problem_offset_and_rescale_single() {
 	linprog2d_data_t prog;
 	double Gx[1] = {-4.0};
 	double Gy[1] = {1.0};
@@ -661,8 +646,7 @@ void test_linprog2d_condition_problem_offset_and_rescale_single()
 	EXPECT_EQ(2.0, h_tar[0]); /* Only rescaling has happened, no shifting */
 }
 
-void test_linprog2d_condition_problem_offset_and_rescale()
-{
+void test_linprog2d_condition_problem_offset_and_rescale() {
 	linprog2d_data_t prog;
 	double Gx[2] = {-4.0, -8.0};
 	double Gy[2] = {4.0, -8.0};
@@ -688,8 +672,7 @@ void test_linprog2d_condition_problem_offset_and_rescale()
 	EXPECT_EQ(2.5, prog.o.y);
 }
 
-void test_linprog2d_categorize()
-{
+void test_linprog2d_categorize() {
 	linprog2d_data_t prog;
 
 	double Gx[7] = {1.0, -1.0, 0.0, 0.0, 0.5, 0.5, -0.25};
@@ -723,8 +706,7 @@ void test_linprog2d_categorize()
 	EXPECT_EQ(5U, floor[2]);
 }
 
-void test_linprog2d_calculate_intersect()
-{
+void test_linprog2d_calculate_intersect() {
 #define LP2D_CI linprog2d_calculate_intersect
 	double x, y;
 
@@ -748,8 +730,7 @@ void test_linprog2d_calculate_intersect()
 #undef LP2D_CI
 }
 
-void test_linprog2d_calculate_yoffset_form()
-{
+void test_linprog2d_calculate_yoffset_form() {
 	double Gx[7] = {1.0, 4.0, 1.2, -8.0, 1.5, 9.0, 1.2};
 	double Gy[7] = {2.0, 2.0, 3.5, 16.0, -7.8, -3.0, 2.0};
 	double h[7] = {4.0, -1.0, 2.0, -8.0, 0.1, 4.0, 1.0};
@@ -776,8 +757,7 @@ void test_linprog2d_calculate_yoffset_form()
 	EXPECT_EQ(0.0, y0[6]);
 }
 
-void test_linprog2d_eliminate_constraint()
-{
+void test_linprog2d_eliminate_constraint() {
 #define LP2D_EC linprog2d_eliminate_constraint
 	/* Parallel constraints. Result only depends on the offset h. */
 
@@ -836,8 +816,7 @@ void test_linprog2d_eliminate_constraint()
 #undef LP2D_EC
 }
 
-void test_linprog2d_calculate_intersects()
-{
+void test_linprog2d_calculate_intersects() {
 	linprog2d_data_t prog;
 	double Gx[9] = {1.0, -1.0, 0.0, 0.0, 0.5, 0.5, -0.25, 4.0, 2.0};
 	double Gy[9] = {0.0, 0.0, -1.0, 1.0, 0.1, 5.0, -1.0, -1.0, 9.0};
@@ -882,8 +861,7 @@ void test_linprog2d_calculate_intersects()
 	EXPECT_EQ(3.6, prog.x_intersect[0]);
 }
 
-void test_linprog2d_track_min_max()
-{
+void test_linprog2d_track_min_max() {
 	double dx[5] = {-1., -2., -8., -4., -8.};
 	double y0[5] = {2., 4., 32., 8., 16.};
 	unsigned int idcs[4] = {0, 1, 3, 4};
@@ -940,8 +918,7 @@ void test_linprog2d_track_min_max()
 	prog.capacity = C;                                                    \
 	prog.tmp = tmp;
 
-void test_linprog2d_solve_vee()
-{
+void test_linprog2d_solve_vee() {
 	/* Result has its minimum at (0, 0)
 
 	    \xxxx^xxxx/
@@ -966,8 +943,7 @@ void test_linprog2d_solve_vee()
 	EXPECT_EQ(0.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset()
-{
+void test_linprog2d_solve_vee_offset() {
 	/* Result has its minimum at (1, 2)
 
 	    \x^xxxxxxx/
@@ -992,8 +968,7 @@ void test_linprog2d_solve_vee_offset()
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel()
-{
+void test_linprog2d_solve_vee_offset_parallel() {
 	/* Result has its minimum at (1, 2)
 
 	 \  \x^xxxxxxx/  /
@@ -1018,8 +993,7 @@ void test_linprog2d_solve_vee_offset_parallel()
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_rotated()
-{
+void test_linprog2d_solve_vee_offset_rotated() {
 	/* Result has its minimum at (1, 2)
 
 	xxxx\ ^       /
@@ -1048,8 +1022,7 @@ void test_linprog2d_solve_vee_offset_rotated()
  * Main program                                                               *
  ******************************************************************************/
 
-int main()
-{
+int main() {
 	RUN(test_feq);
 	RUN(test_memalign64);
 	RUN(test_sort);
@@ -1081,8 +1054,7 @@ int main()
 	fprintf(stderr, ANSI_GRAY "=====" ANSI_RESET "\n");
 	if (n_failed) {
 		fprintf(stderr, ANSI_RED "[ERR]" ANSI_RESET);
-	}
-	else {
+	} else {
 		fprintf(stderr, ANSI_GREEN "[OK!]" ANSI_RESET);
 	}
 	fprintf(stderr, " Successful tests: %d; Failed tests: %d\n", n_success,
