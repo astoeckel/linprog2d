@@ -864,13 +864,15 @@ void test_linprog2d_calculate_intersects()
 	linprog2d_calculate_yoffset_form(floor, prog.floor_len, Gx, Gy, h, dx, y0);
 
 	prog.intersect_len = 0U;
-	linprog2d_calculate_intersects(&prog, ceil, &prog.ceil_len, TRUE);
+	linprog2d_calculate_intersects(&prog, ceil, &prog.ceil_len, TRUE, FALSE, 0,
+	                               FALSE);
 	EXPECT_EQ(0U, prog.intersect_len);
 	EXPECT_EQ(2U, prog.ceil_len);
 	EXPECT_EQ(2U, ceil[0]);
 	EXPECT_EQ(7U, ceil[1]);
 
-	linprog2d_calculate_intersects(&prog, floor, &prog.floor_len, FALSE);
+	linprog2d_calculate_intersects(&prog, floor, &prog.floor_len, FALSE, FALSE,
+	                               0, FALSE);
 	EXPECT_EQ(1U, prog.intersect_len);
 	EXPECT_EQ(3U, prog.floor_len);
 	EXPECT_EQ(3U, floor[0]);
@@ -928,14 +930,14 @@ void test_linprog2d_track_min_max()
 }
 
 /* Macro assembling a linprog2d_data instance on the stack */
-#define MKPROG(C) \
-	linprog2d_result_t res; \
-	linprog2d_data_t prog; \
-	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C / 2]; \
-	unsigned int ceil[C], floor[C], tmp[C]; \
-	prog.Gx = Gx, prog.Gy = Gy, prog.h = h, prog.dx = dx, prog.y0 = y0; \
+#define MKPROG(C)                                                         \
+	linprog2d_result_t res;                                               \
+	linprog2d_data_t prog;                                                \
+	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C / 2];          \
+	unsigned int ceil[C], floor[C], tmp[C];                               \
+	prog.Gx = Gx, prog.Gy = Gy, prog.h = h, prog.dx = dx, prog.y0 = y0;   \
 	prog.x_intersect = x_intersect, prog.ceil = ceil, prog.floor = floor; \
-	prog.capacity = C;\
+	prog.capacity = C;                                                    \
 	prog.tmp = tmp;
 
 void test_linprog2d_solve_vee()

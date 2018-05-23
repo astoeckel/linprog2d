@@ -681,8 +681,8 @@ static unsigned int linprog2d_eliminate_constraint(
 static void linprog2d_calculate_intersects(linprog2d_data_t *prog,
                                            unsigned int *idcs,
                                            unsigned int *idcs_len,
-                                           bool_t is_ceil)
-{
+                                           bool_t is_ceil, bool_t has_median,
+                                           double mx, bool_t optimum_is_left) {
 	/* We have two write pointers. One at the beginning of the temporary list
 	   and one at the end of the list. The first pointer is used to write the
 	   indices of pairs that may be feasible. We must ensure that we do not
@@ -703,12 +703,12 @@ static void linprog2d_calculate_intersects(linprog2d_data_t *prog,
 		                                   Gy[ci1], h[ci1], &x, &y)) {
 			tmp[i_tar_single--] = linprog2d_eliminate_constraint(
 			    h, dx, ci0, ci1, is_ceil, TRUE, FALSE);
-		}
-		else if (x < prog->x0) {
+		} else if (x < prog->x0 ||
+		           (has_median && feq_(x, mx) && !optimum_is_left)) {
 			tmp[i_tar_single--] = linprog2d_eliminate_constraint(
 			    h, dx, ci0, ci1, is_ceil, FALSE, FALSE);
-		}
-		else if (x > prog->x1) {
+		} else if (x > prog->x1 ||
+		           (has_median && feq_(x, mx) && optimum_is_left)) {
 			tmp[i_tar_single--] = linprog2d_eliminate_constraint(
 			    h, dx, ci0, ci1, is_ceil, FALSE, TRUE);
 		} else {
@@ -885,6 +885,7 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
                                    const double *h, unsigned int n) {
 	double x, y; /* result x, y */
 	linprog2d_data_t *prog = (linprog2d_data_t *)prog_;
+	bool_t optimum_is_left, has_median = FALSE;
 
 	/* Make sure the given linprog2d instance has sufficient memory to solve
 	   the problem. If not, return with an error. */
@@ -911,13 +912,15 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 	while (prog->floor_len > 1U || prog->ceil_len > 1U) {
 		/* Calculate constraint intersection points. Of those constraints that
 		   are parallel or have an intersection point outside of [x0, x1], throw
-		   one away. As a consequence, the two functions below edit the ceil and
-		   floor list inplace. */
+		   one away. Furthermore, if we calculated a median in the last round
+		   and know its location w.r.t. the optimum, check whether the
+		   intersection point is on that median. Note that the two functions
+		   below edit the ceil and floor list inplace. */
 		prog->intersect_len = 0U; /* number of intersections */
 		linprog2d_calculate_intersects(prog, prog->ceil, &(prog->ceil_len),
-		                               TRUE);
+		                               TRUE, has_median, x, optimum_is_left);
 		linprog2d_calculate_intersects(prog, prog->floor, &(prog->floor_len),
-		                               FALSE);
+		                               FALSE, has_median, x, optimum_is_left);
 
 		/* If we have no intersections, then the above code must have eliminated
 		   some constraints. This will give us new pairs to try. */
@@ -934,12 +937,14 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 			case LOC_UNBOUNDED:
 				return linprog2d_result_unbounded();
 			case LOC_LEFT:
-				prog->x1 =
-				    fmin_(prog->x1, x - MAX_EPS_ABS - MAX_EPS_REL * fabs(x));
+				prog->x1 = fmin_(prog->x1, x);
+				optimum_is_left = TRUE;
+				has_median = TRUE;
 				break;
 			case LOC_RIGHT:
-				prog->x0 =
-				    fmax_(prog->x0, x + MAX_EPS_ABS + MAX_EPS_REL * fabs(x));
+				prog->x0 = fmax_(prog->x0, x);
+				optimum_is_left = FALSE;
+				has_median = TRUE;
 				break;
 			case LOC_HERE:
 				return linprog2d_result_point(&prog->R, &prog->o, x, y);
