@@ -59,8 +59,7 @@ static double hypot_(double x, double y) { return sqrt(x * x + y * y); }
 #define MAX_EPS_ABS 1e-30 /* maximum absolute difference */
 #define MAX_EPS_REL 1e-15 /* maximum relative difference */
 
-bool_t feq_(double x, double y)
-{
+bool_t feq_(double x, double y) {
 	const double dlt = fabs(x - y);
 	return (dlt < MAX_EPS_ABS) || (dlt < MAX_EPS_REL * fmax_(fabs(x), fabs(y)));
 }
@@ -79,8 +78,7 @@ struct vec2 {
 /**
  * Returns a vec2 instance that is filled with the given values.
  */
-static struct vec2 vec2_create(double x, double y)
-{
+static struct vec2 vec2_create(double x, double y) {
 	struct vec2 res;
 	res.x = x;
 	res.y = y;
@@ -101,8 +99,8 @@ struct mat22 {
 /**
  * Fills a mat22 instance with the given values.
  */
-static struct mat22 mat22_create(double a11, double a12, double a21, double a22)
-{
+static struct mat22 mat22_create(double a11, double a12, double a21,
+                                 double a22) {
 	struct mat22 res;
 	res.a11 = a11;
 	res.a12 = a12;
@@ -115,8 +113,7 @@ static struct mat22 mat22_create(double a11, double a12, double a21, double a22)
  * Returns a rotation matrix that aligns the given (x, y) vector with the
  * y axis; i.e. (x, y) is rotated to some (0, -y').
  */
-static struct mat22 mat22_rot(double x, double y)
-{
+static struct mat22 mat22_rot(double x, double y) {
 	const double h = hypot_(x, y);
 	return mat22_create(-y / h, -x / h, x / h, -y / h);
 }
@@ -133,8 +130,7 @@ static struct mat22 mat22_rot(double x, double y)
  *
  * TODO: use __builtin_assume_aligned on GCC in the appropriate places.
  */
-static void *mem_align64(void *p, unsigned long int offs)
-{
+static void *mem_align64(void *p, unsigned long int offs) {
 	return (void *)(((unsigned long int)p + offs + 63UL) & (~63UL));
 }
 
@@ -147,8 +143,7 @@ static void *mem_align64(void *p, unsigned long int offs)
  */
 static linprog2d_result_t linprog2d_result_create(enum linprog2d_status status,
                                                   double x1, double y1,
-                                                  double x2, double y2)
-{
+                                                  double x2, double y2) {
 	linprog2d_result_t res;
 	res.status = status, res.x1 = x1, res.y1 = y1, res.x2 = x2, res.y2 = y2;
 	return res;
@@ -157,21 +152,18 @@ static linprog2d_result_t linprog2d_result_create(enum linprog2d_status status,
 /**
  * Creates a linprog2d_result instance representing an error.
  */
-static linprog2d_result_t linprog2d_result_err()
-{
+static linprog2d_result_t linprog2d_result_err() {
 	return linprog2d_result_create(LP2D_ERROR, 0.0, 0.0, 0.0, 0.0);
 }
 
 /**
  * Creates a linprog2d_result instance representing an infeasible problem.
  */
-static linprog2d_result_t linprog2d_result_infeasible()
-{
+static linprog2d_result_t linprog2d_result_infeasible() {
 	return linprog2d_result_create(LP2D_INFEASIBLE, 0.0, 0.0, 0.0, 0.0);
 }
 
-static linprog2d_result_t linprog2d_result_unbounded()
-{
+static linprog2d_result_t linprog2d_result_unbounded() {
 	return linprog2d_result_create(LP2D_UNBOUNDED, 0.0, 0.0, 0.0, 0.0);
 }
 
@@ -181,8 +173,7 @@ static linprog2d_result_t linprog2d_result_unbounded()
  */
 static linprog2d_result_t linprog2d_result_point(const struct mat22 *R,
                                                  const struct vec2 *o, double x,
-                                                 double y)
-{
+                                                 double y) {
 	struct vec2 res;
 
 	/* Undo the offset */
@@ -216,10 +207,9 @@ static double median(double *d, unsigned int len);
 
 /**
  * Sorts a list of up to five elements in "constant time" (well, virtually ANY
- * algorithm sorts a size-constraint list in "constant time").
+ * algorithm sorts a size-constrained list in "constant time").
  */
-static void sort(double *d, unsigned int len)
-{
+static void sort(double *d, unsigned int len) {
 #define SWAP_IF_GT(x, y) \
 	if (d[y] < d[x])     \
 	SWAP(x, y)
@@ -263,20 +253,17 @@ static void sort(double *d, unsigned int len)
  * piviot are at the end of the list, and the piviot itself is between the two
  * lists. Returns the number of values smaller than the piviot.
  */
-static unsigned int partition(double *d, unsigned int len, double piviot)
-{
+static unsigned int partition(double *d, unsigned int len, double piviot) {
 	unsigned int i, l = 0, r = len - 1;
 	for (i = 0; i <= r;) {
 		if (d[i] < piviot) {
 			SWAP(l, i);
 			l++;
 			i++;
-		}
-		else if (d[i] > piviot) {
+		} else if (d[i] > piviot) {
 			SWAP(r, i);
 			r--;
-		}
-		else {
+		} else {
 			i++;
 		}
 	}
@@ -287,8 +274,7 @@ static unsigned int partition(double *d, unsigned int len, double piviot)
  * Computes the kth-smallest element in the list d with length len. Operates
  * inline on d.
  */
-static double kth_smallest(double *d, unsigned int len, unsigned int k)
-{
+static double kth_smallest(double *d, unsigned int len, unsigned int k) {
 	/* See http://www-di.inf.puc-rio.br/~laber/median-lineartime.pdf */
 	unsigned int i, j, l;
 	double piviot; /* median-of-medians */
@@ -322,11 +308,9 @@ static double kth_smallest(double *d, unsigned int len, unsigned int k)
 	l = partition(d, len, piviot);
 	if (l == k) {
 		return piviot; /* the piviot happens to be the median */
-	}
-	else if (l > k) {
+	} else if (l > k) {
 		return kth_smallest(d, l, k);
-	}
-	else {
+	} else {
 		return kth_smallest(d + l + 1, len - l - 1, k - l - 1);
 	}
 }
@@ -334,8 +318,7 @@ static double kth_smallest(double *d, unsigned int len, unsigned int k)
 /**
  * Returns the element which, if the list d were sorted, was at position len / 2
  */
-static double median(double *d, unsigned int len)
-{
+static double median(double *d, unsigned int len) {
 	return kth_smallest(d, len, len / 2);
 }
 
@@ -435,8 +418,7 @@ typedef struct linprog2d_data linprog2d_data_t;
  * Function that clears problem-specific data from the linprog2d_data structure.
  * This must be called at the beginning of the solution process.
  */
-static void linprog2d_reset(linprog2d_data_t *prog, unsigned int n)
-{
+static void linprog2d_reset(linprog2d_data_t *prog, unsigned int n) {
 	prog->ceil_len = 0;
 	prog->floor_len = 0;
 	prog->x0 = -HUGE_VAL;
@@ -450,8 +432,7 @@ static void linprog2d_reset(linprog2d_data_t *prog, unsigned int n)
 }
 
 static linprog2d_t *linprog2d_init_internal(linprog2d_data_t *prog,
-                                            unsigned int capacity, char *mem)
-{
+                                            unsigned int capacity, char *mem) {
 #define SD sizeof(double)
 #define SU sizeof(unsigned int)
 	if (!prog) {
@@ -484,8 +465,7 @@ static linprog2d_t *linprog2d_init_internal(linprog2d_data_t *prog,
  * Currently this normalisation is only based on the direction (Gx, Gy) of the
  * constraint, not on the offset h.
  */
-static double linprog2d_normalization_coeff(double Gx, double Gy)
-{
+static double linprog2d_normalization_coeff(double Gx, double Gy) {
 	return fmax_(fabs(Gx), fabs(Gy));
 }
 
@@ -509,8 +489,7 @@ static double linprog2d_normalization_coeff(double Gx, double Gy)
 static int linprog2d_condition_problem(linprog2d_data_t *prog, double cx,
                                        double cy, const double *src_Gx,
                                        const double *src_Gy,
-                                       const double *src_h)
-{
+                                       const double *src_h) {
 	struct mat22 R = mat22_rot(cx, cy);
 	struct vec2 o = vec2_create(0.0, 0.0);               /* Offset vector */
 	struct mat22 GTG = mat22_create(0.0, 0.0, 0.0, 0.0); /* Matrix G.T G */
@@ -533,8 +512,7 @@ static int linprog2d_condition_problem(linprog2d_data_t *prog, double cx,
 			if (h <= 0.0) {
 				/* Constraint of the form 0 >= h is always true for h <= 0.0 */
 				continue;
-			}
-			else {
+			} else {
 				/* This constraint is always false. Abort. */
 				return FALSE;
 			}
@@ -591,20 +569,16 @@ static int linprog2d_condition_problem(linprog2d_data_t *prog, double cx,
 /**
  * Calculates the category of a constraint based on its direction Gx, Gy.
  */
-static int linprog2d_constraint_category(double Gx, double Gy)
-{
+static int linprog2d_constraint_category(double Gx, double Gy) {
 	if (feq_(Gy, 0.0)) {
 		if (Gx > 0.0) {
 			return CAT_VERT_LEFT;
-		}
-		else {
+		} else {
 			return CAT_VERT_RIGHT;
 		}
-	}
-	else if (Gy > 0.0) {
+	} else if (Gy > 0.0) {
 		return CAT_FLOOR;
-	}
-	else /* if (Gy < 0.0) */ {
+	} else /* if (Gy < 0.0) */ {
 		return CAT_CEIL;
 	}
 }
@@ -613,8 +587,7 @@ static int linprog2d_constraint_category(double Gx, double Gy)
  * Sorts the constraints into the ceil and floor lists and updates the left
  * and right boundary if a constraint is perfectly vertical.
  */
-static int linprog2d_categorize_constraints(linprog2d_data_t *prog)
-{
+static int linprog2d_categorize_constraints(linprog2d_data_t *prog) {
 	unsigned int i;
 	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h;
 	for (i = 0; i < prog->n; i++) {
@@ -643,8 +616,7 @@ static void linprog2d_calculate_yoffset_form(const unsigned int *idcs,
                                              unsigned int idcs_len,
                                              const double *Gx, const double *Gy,
                                              const double *h, double *dx,
-                                             double *y0)
-{
+                                             double *y0) {
 	unsigned int i;
 	for (i = 0; i < idcs_len; i++) {
 		dx[idcs[i]] = -Gx[idcs[i]] / Gy[idcs[i]];
@@ -657,8 +629,7 @@ static void linprog2d_calculate_yoffset_form(const unsigned int *idcs,
  */
 static int linprog2d_calculate_intersect(double Gx1, double Gy1, double h1,
                                          double Gx2, double Gy2, double h2,
-                                         double *x, double *y)
-{
+                                         double *x, double *y) {
 	const double num_x = h1 * Gy2 - h2 * Gy1;
 	const double num_y = h2 * Gx1 - h1 * Gx2;
 	const double den = Gx1 * Gy2 - Gx2 * Gy1;
@@ -677,8 +648,7 @@ static int linprog2d_calculate_intersect(double Gx1, double Gy1, double h1,
  */
 static unsigned int linprog2d_eliminate_constraint(
     const double *h, const double *dx, unsigned int ci0, unsigned int ci1,
-    bool_t is_ceil, bool_t is_parallel, bool_t optimum_is_left)
-{
+    bool_t is_ceil, bool_t is_parallel, bool_t optimum_is_left) {
 	/* Get the constraint types, vertical constraints have already been filtered
 	   out. */
 	if (is_parallel) {
@@ -686,20 +656,17 @@ static unsigned int linprog2d_eliminate_constraint(
 		   constraint has been normalised. */
 		if (h[ci0] >= h[ci1]) {
 			return ci0;
-		}
-		else {
+		} else {
 			return ci1;
 		}
-	}
-	else {
+	} else {
 		/* The greater than/less than relation changes depending on whether the
 		   optimum is on the right/left side or this is a ceil/floor
 		   constraint. */
 		int dir = (optimum_is_left ? 1 : -1) * (is_ceil ? 1 : -1);
 		if (dir * dx[ci0] >= dir * dx[ci1]) {
 			return ci0;
-		}
-		else {
+		} else {
 			return ci1;
 		}
 	}
@@ -744,8 +711,7 @@ static void linprog2d_calculate_intersects(linprog2d_data_t *prog,
 		else if (x > prog->x1) {
 			tmp[i_tar_single--] = linprog2d_eliminate_constraint(
 			    h, dx, ci0, ci1, is_ceil, FALSE, TRUE);
-		}
-		else {
+		} else {
 			/* As far as we know, the point may lie in the feasible range.
 			   Remember the intersection point and store the indicies of the
 			   constraints this intersection point belongs to. */
@@ -799,8 +765,7 @@ struct linprog2d_extremum {
  */
 static struct linprog2d_extremum linprog2d_track_extrema(
     double x, const double *dx, const double *y0, const unsigned int *idcs,
-    unsigned int idcs_len, bool_t compute_min)
-{
+    unsigned int idcs_len, bool_t compute_min) {
 	unsigned int i, j;
 	double y;
 	struct linprog2d_extremum e;
@@ -816,8 +781,7 @@ static struct linprog2d_extremum linprog2d_track_extrema(
 			   slope */
 			e.max_dx = fmax_(dx[j], e.max_dx);
 			e.min_dx = fmin_(dx[j], e.min_dx);
-		}
-		else if ((compute_min && y < e.y) || (!compute_min && y > e.y)) {
+		} else if ((compute_min && y < e.y) || (!compute_min && y > e.y)) {
 			e.y = y; /* this is the new extremum, reset the min/max slope */
 			e.min_dx = e.max_dx = dx[j];
 		}
@@ -836,8 +800,7 @@ static struct linprog2d_extremum linprog2d_track_extrema(
  * Determines where the optimum is w.r.t. the given median mx.
  */
 static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
-                                    double *y)
-{
+                                    double *y) {
 	/* Compute the value of the ceil/floor constraints at mx and track their
 	   slope. Since multiple constraints may go through exactly the same point,
 	   we need to track both the minimum and the maximum slope for all
@@ -853,8 +816,7 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 		   d/dx f(x) - g(x) */
 		if (e_floor.min_dx > e_ceil.max_dx) {
 			return LOC_LEFT;
-		}
-		else if (e_floor.max_dx < e_ceil.min_dx) {
+		} else if (e_floor.max_dx < e_ceil.min_dx) {
 			return LOC_RIGHT;
 		}
 		return LOC_DOES_NOT_EXIST;
@@ -864,11 +826,9 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 		if (e_floor.min_dx <= 0 && e_floor.max_dx >= 0) {
 			*y = e_floor.y;
 			return LOC_HERE;
-		}
-		else if (e_floor.min_dx > 0) {
+		} else if (e_floor.min_dx > 0) {
 			return LOC_LEFT;
-		}
-		else {
+		} else {
 			return LOC_RIGHT;
 		}
 	}
@@ -880,8 +840,7 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
  * EXTERNAL API                                                               *
  ******************************************************************************/
 
-unsigned int linprog2d_mem_size(unsigned int capacity)
-{
+unsigned int linprog2d_mem_size(unsigned int capacity) {
 	unsigned int res = 0;
 
 	/* Main datastructure plus alignment */
@@ -897,14 +856,12 @@ unsigned int linprog2d_mem_size(unsigned int capacity)
 	return res;
 }
 
-linprog2d_t *linprog2d_init(unsigned int capacity, char *mem)
-{
+linprog2d_t *linprog2d_init(unsigned int capacity, char *mem) {
 	return linprog2d_init_internal((linprog2d_data_t *)mem, capacity,
 	                               mem + sizeof(linprog2d_data_t));
 }
 
-linprog2d_t *linprog2d_create(unsigned int capacity)
-{
+linprog2d_t *linprog2d_create(unsigned int capacity) {
 #ifndef LINPROG2D_NO_ALLOC
 	return linprog2d_init(capacity,
 	                      (char *)malloc(linprog2d_mem_size(capacity)));
@@ -913,22 +870,19 @@ linprog2d_t *linprog2d_create(unsigned int capacity)
 #endif
 }
 
-void linprog2d_free(linprog2d_t *prog)
-{
+void linprog2d_free(linprog2d_t *prog) {
 #ifndef LINPROG2D_NO_ALLOC
 	free(prog); /* Free the previously allocated memory */
 #endif
 }
 
-unsigned int linprog2d_capacity(const linprog2d_t *prog)
-{
+unsigned int linprog2d_capacity(const linprog2d_t *prog) {
 	return ((linprog2d_data_t *)prog)->capacity;
 }
 
 linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
                                    const double *Gx, const double *Gy,
-                                   const double *h, unsigned int n)
-{
+                                   const double *h, unsigned int n) {
 	double x, y; /* result x, y */
 	linprog2d_data_t *prog = (linprog2d_data_t *)prog_;
 
@@ -1000,8 +954,7 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 
 linprog2d_result_t linprog2d_solve_simple(double cx, double cy,
                                           const double *Gx, const double *Gy,
-                                          const double *h, unsigned int n)
-{
+                                          const double *h, unsigned int n) {
 #ifndef LINPROG2D_NO_ALLOC
 	linprog2d_t *prog = linprog2d_create(n);
 	if (prog) {
