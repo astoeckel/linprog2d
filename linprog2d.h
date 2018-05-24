@@ -27,6 +27,13 @@
 #ifndef LINPROG_2D_H_
 #define LINPROG_2D_H_
 
+#if __EMSCRIPTEN__
+#import <emscripten.h>
+#define LP2D_EXPORT EMSCRIPTEN_KEEPALIVE
+#else
+#define LP2D_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -92,10 +99,15 @@ typedef struct linprog2d_result linprog2d_result_t;
 typedef void linprog2d_t;
 
 /**
+ * Size type used by linprog2d.
+ */
+typedef unsigned long int linprog2d_size_t;
+
+/**
  * Computes the number of bytes required to store a Linprog2DSolver instance
  * with the given capacity.
  */
-unsigned int linprog2d_mem_size(unsigned int capacity);
+linprog2d_size_t LP2D_EXPORT linprog2d_mem_size(unsigned int capacity);
 
 /**
  * Constructs a linprog2d instance with the given capacity inplace at the
@@ -111,7 +123,7 @@ unsigned int linprog2d_mem_size(unsigned int capacity);
  * memory region. The required space can be computed by calling
  * linprog2d_create.
  */
-linprog2d_t *linprog2d_init(unsigned int capacity, char *mem);
+linprog2d_t LP2D_EXPORT *linprog2d_init(unsigned int capacity, char *mem);
 
 /**
  * Creates a new linprog2d instance that is able to represent at least n
@@ -120,26 +132,27 @@ linprog2d_t *linprog2d_init(unsigned int capacity, char *mem);
  * linking to the C standard library (the LINPROG2D_NO_ALLOC flag is defined),
  * returns null.
  */
-linprog2d_t *linprog2d_create(unsigned int capacity);
+linprog2d_t LP2D_EXPORT *linprog2d_create(unsigned int capacity);
 
 /**
  * Frees a previously created linprog2d instance. If the LINPROG2D_NO_ALLOC flag
  * is defined, this function does nothing.
  */
-void linprog2d_free(linprog2d_t *prog);
+void LP2D_EXPORT linprog2d_free(linprog2d_t *prog);
 
 /**
  * Returns the maximum number of constraints in a problem that can be solved
  * with this linprog2d_t instance.
  */
-unsigned int linprog2d_capacity(const linprog2d_t *prog);
+unsigned int LP2D_EXPORT linprog2d_capacity(const linprog2d_t *prog);
 
 /**
  * Solves a two-dimensional linear programming problem.
  */
-linprog2d_result_t linprog2d_solve(linprog2d_t *prog, double cx, double cy,
-                                   const double *Gx, const double *Gy,
-                                   const double *h, unsigned int n);
+linprog2d_result_t LP2D_EXPORT linprog2d_solve(linprog2d_t *prog, double cx,
+                                               double cy, const double *Gx,
+                                               const double *Gy,
+                                               const double *h, unsigned int n);
 
 /**
  * Convenience function which allocates a new linprog2d_t instance, calls
@@ -153,9 +166,11 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog, double cx, double cy,
  *
  * The result is encoded in the returned linprog2d_result structure.
  */
-linprog2d_result_t linprog2d_solve_simple(double cx, double cy,
-                                          const double *Gx, const double *Gy,
-                                          const double *h, unsigned int n);
+linprog2d_result_t LP2D_EXPORT linprog2d_solve_simple(double cx, double cy,
+                                                      const double *Gx,
+                                                      const double *Gy,
+                                                      const double *h,
+                                                      unsigned int n);
 
 #ifdef __cplusplus
 }

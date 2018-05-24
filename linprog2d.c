@@ -464,7 +464,8 @@ static linprog2d_t *linprog2d_init_internal(linprog2d_data_t *prog,
 	prog->Gy = (double *)mem_align64(prog->Gx, SD * capacity);
 	prog->h = (double *)mem_align64(prog->Gy, SD * capacity);
 	prog->dx = (double *)mem_align64(prog->h, SD * capacity);
-	prog->x_intersect = (double *)mem_align64(prog->dx, SD * capacity);
+	prog->y0 = (double *)mem_align64(prog->dx, SD * capacity);
+	prog->x_intersect = (double *)mem_align64(prog->y0, SD * capacity);
 	prog->ceil =
 	    (unsigned int *)mem_align64(prog->x_intersect, SD * capacity / 2);
 	prog->floor = (unsigned int *)mem_align64(prog->ceil, SU * capacity);
@@ -809,7 +810,7 @@ static struct linprog2d_extremum linprog2d_track_extrema(
 	return e;
 }
 
-#define LOC_DOES_NOT_EXIST 0
+#define LOC_INFEASIBLE 0
 #define LOC_UNBOUNDED 1
 #define LOC_LEFT 2
 #define LOC_RIGHT 3
@@ -839,7 +840,7 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 		} else if (e_floor.max_dx < e_ceil.min_dx) {
 			return LOC_RIGHT;
 		}
-		return LOC_DOES_NOT_EXIST;
+		return LOC_INFEASIBLE;
 	}
 
 	if (e_floor.valid) {
@@ -1000,18 +1001,18 @@ static linprog2d_result_t linprog2d_calculate_result(linprog2d_data_t *prog) {
  * EXTERNAL API                                                               *
  ******************************************************************************/
 
-unsigned int linprog2d_mem_size(unsigned int capacity) {
-	unsigned int res = 0;
+linprog2d_size_t linprog2d_mem_size(unsigned int capacity) {
+	linprog2d_size_t res = 0UL;
 
 	/* Main datastructure plus alignment */
-	res += sizeof(linprog2d_data_t) + 64;
+	res += sizeof(linprog2d_data_t) + 64UL;
 
 	/* Space for the Gx, Gy, h, dx, y0, x_intersect lists plus alignment. The
 	   x_intersect list only has half the length. */
-	res += (sizeof(double) * 5 + sizeof(double) / 2) * capacity + 64 * 6;
+	res += (sizeof(double) * 5UL + sizeof(double) / 2UL) * capacity + 64UL * 6UL;
 
 	/* Space for the ceil, floor, tmp lists plus alignment. */
-	res += sizeof(unsigned int) * 3 * capacity + 64 * 3;
+	res += sizeof(unsigned int) * 3UL * capacity + 64UL * 3UL;
 
 	return res;
 }
@@ -1095,7 +1096,7 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 		   and update the left/right boundary. */
 		x = median(prog->x_intersect, prog->intersect_len);
 		switch (linprog2d_locate_optimum(prog, x, &y)) {
-			case LOC_DOES_NOT_EXIST:
+			case LOC_INFEASIBLE:
 				return linprog2d_result_infeasible();
 			case LOC_UNBOUNDED:
 				return linprog2d_result_unbounded();

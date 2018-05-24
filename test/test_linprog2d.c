@@ -465,12 +465,13 @@ void test_linprog2d_create_and_capacity() {
 			prog->Gy[i] = 10 * i + 1;
 			prog->h[i] = 10 * i + 2;
 			prog->dx[i] = 10 * i + 3;
+			prog->y0[i] = 10 * i + 4;
 			if (i < 64U) {
-				prog->x_intersect[i] = 10 * i + 4;
+				prog->x_intersect[i] = 10 * i + 5;
 			}
-			prog->ceil[i] = 10 * i + 5;
-			prog->floor[i] = 10 * i + 6;
-			prog->tmp[i] = 10 * i + 7;
+			prog->ceil[i] = 10 * i + 6;
+			prog->floor[i] = 10 * i + 7;
+			prog->tmp[i] = 10 * i + 8;
 		}
 
 		/* Try to read the data back */
@@ -479,12 +480,13 @@ void test_linprog2d_create_and_capacity() {
 			EXPECT_EQ(10 * i + 1, (unsigned int)(prog->Gy[i]));
 			EXPECT_EQ(10 * i + 2, (unsigned int)(prog->h[i]));
 			EXPECT_EQ(10 * i + 3, (unsigned int)(prog->dx[i]));
+			EXPECT_EQ(10 * i + 4, (unsigned int)(prog->y0[i]));
 			if (i < 64U) {
-				EXPECT_EQ(10 * i + 4, (unsigned int)(prog->x_intersect[i]));
+				EXPECT_EQ(10 * i + 5, (unsigned int)(prog->x_intersect[i]));
 			}
-			EXPECT_EQ(10 * i + 5, (unsigned int)(prog->ceil[i]));
-			EXPECT_EQ(10 * i + 6, (unsigned int)(prog->floor[i]));
-			EXPECT_EQ(10 * i + 7, (unsigned int)(prog->tmp[i]));
+			EXPECT_EQ(10 * i + 6, (unsigned int)(prog->ceil[i]));
+			EXPECT_EQ(10 * i + 7, (unsigned int)(prog->floor[i]));
+			EXPECT_EQ(10 * i + 8, (unsigned int)(prog->tmp[i]));
 		}
 
 		linprog2d_free(prog);
@@ -911,7 +913,7 @@ void test_linprog2d_track_min_max() {
 #define MKPROG(C)                                                         \
 	linprog2d_result_t res;                                               \
 	linprog2d_data_t prog;                                                \
-	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C];          \
+	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C];              \
 	unsigned int ceil[C], floor[C], tmp[C];                               \
 	prog.Gx = Gx, prog.Gy = Gy, prog.h = h, prog.dx = dx, prog.y0 = y0;   \
 	prog.x_intersect = x_intersect, prog.ceil = ceil, prog.floor = floor; \
@@ -1094,7 +1096,7 @@ void test_linprog2d_single_floor_horz_edge() {
 	   |  |       |                       */
 
 	double Gx_src[3] = {0.0, 1.0, -1.0};
-	double Gy_src[3] = {1.0, 0.0,  0.0};
+	double Gy_src[3] = {1.0, 0.0, 0.0};
 	double h_src[3] = {1.0, -2.0, -3.0};
 
 	MKPROG(3U)
@@ -1182,7 +1184,7 @@ void test_linprog2d_floor_ceil_intersect_edge1() {
 
 void test_linprog2d_floor_ceil_intersect_edge2() {
 	/* Result is on a line.
-              /\
+	          /\
 	      ^  /xx\
 	      | /xxxx\
 	      |/xxxxxx\
@@ -1193,7 +1195,7 @@ void test_linprog2d_floor_ceil_intersect_edge2() {
 	--/---|------------\-->
 	 /    |             \                 */
 
-	double Gx_src[3] = {0.0,  1.0, -1.0};
+	double Gx_src[3] = {0.0, 1.0, -1.0};
 	double Gy_src[3] = {1.0, -1.0, -1.0};
 	double h_src[3] = {1.0, -5.0, -5.0};
 
@@ -1261,6 +1263,42 @@ void test_linprog2d_floor_floor_intersect_edge() {
 	EXPECT_EQ(1.0, res.y2);
 }
 
+void test_linprog2d_vert_infeasible() {
+	/* Result is infeasible.
+
+	<|    ^    |>
+	----------------------
+	<|    |    |>
+	<|^ ^ |^ ^ |> ^ ^ ^ ^
+	-|----|----|----------
+	<|    |    |>
+	<|    |    |>
+	-|----|----|---------->
+	<|    |    |>                         */
+
+	double Gx_src[4] = {0.0, 0.0, 1.0, -1.0};
+	double Gy_src[4] = {1.0, -1.0, 0.0, 0.0};
+	double h_src[4] = {1.0, -3.0, 5.0, 5.0};
+
+	MKPROG(4U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 4U);
+	EXPECT_EQ(LP2D_INFEASIBLE, res.status);
+}
+
+void test_linprog2d_hatches() {
+	double Gx_src[16] = {  1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1};
+	double Gy_src[16] = {  1,   1,   1,   1,   1,   1,   1,   1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1};
+	double h_src[16] =  {-20, -20, -15, -15, -10, -10,  -5,  -5, -20, -20, -15, -15, -10, -10,  -5,  -5};
+
+	MKPROG(16U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 16U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(0.0, res.x1);
+	EXPECT_NEAR(-5.0, res.y1);
+}
+
 void test_linprog2d_nr_example() {
 	/* Example from Numerical Recipes 3rd ed. pp. 529; see p. 534 for fig. */
 
@@ -1278,13 +1316,12 @@ void test_linprog2d_nr_example() {
 
 void test_linprog2d_barnfm10e_example() {
 	/* Example from random lecture found on the internet
-	   http://www3.govst.edu/kriordan/files/ssc/math161/ppt/barnfm10e_ppt_5_2.ppt */
+	   http://www3.govst.edu/kriordan/files/ssc/math161/ppt/barnfm10e_ppt_5_2.ppt
+	 */
 
 	double Gx_src[5] = {1.0, 0.0, -1.0, -8.0, -4.0};
 	double Gy_src[5] = {0.0, 1.0, 0.0, -8.0, -12.0};
 	double h_src[5] = {0.0, 0.0, -15.0, -160.0, -180.0};
-
-	unsigned int i;
 
 	MKPROG(5U)
 
@@ -1292,6 +1329,44 @@ void test_linprog2d_barnfm10e_example() {
 	EXPECT_EQ(LP2D_POINT, res.status);
 	EXPECT_NEAR(7.5, res.x1);
 	EXPECT_NEAR(12.5, res.y1);
+}
+
+void test_linprog2d_solve_simple_nr_example() {
+	/* Example from Numerical Recipes 3rd ed. pp. 529; see p. 534 for fig. */
+
+	const double Gx_src[3] = {-2.0, 1.0, -1.0};
+	const double Gy_src[3] = {-1.0, 1.0, -3.0};
+	const double h_src[3] = {-70.0, 40.0, -90.0};
+
+	linprog2d_result_t res =
+	    linprog2d_solve_simple(-40.0, -60.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(24.0, res.x1);
+	EXPECT_NEAR(22.0, res.y1);
+}
+
+void test_linprog2d_solve_simple_barnfm10e_example() {
+	/* Example from random lecture found on the internet
+	   http://www3.govst.edu/kriordan/files/ssc/math161/ppt/barnfm10e_ppt_5_2.ppt
+	 */
+
+	const double Gx_src[5] = {1.0, 0.0, -1.0, -8.0, -4.0};
+	const double Gy_src[5] = {0.0, 1.0, 0.0, -8.0, -12.0};
+	const double h_src[5] = {0.0, 0.0, -15.0, -160.0, -180.0};
+
+	linprog2d_result_t res =
+	    linprog2d_solve_simple(-5.0, -10.0, Gx_src, Gy_src, h_src, 5U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(7.5, res.x1);
+	EXPECT_NEAR(12.5, res.y1);
+}
+
+void test_linprog2d_solve_simple_fail() {
+	/* Try to allocate 240 GiB of memory. Congrats if this does not fail on your
+	   machine. */
+	linprog2d_result_t res =
+	    linprog2d_solve_simple(0.0, 1.0, NULL, NULL, NULL, 0xFFFFFFFFUL);
+	EXPECT_EQ(LP2D_ERROR, res.status);
 }
 
 /******************************************************************************
@@ -1337,8 +1412,15 @@ int main() {
 	RUN(test_linprog2d_floor_ceil_intersect_edge2);
 	RUN(test_linprog2d_floor_ceil_intersect_edge3);
 	RUN(test_linprog2d_floor_floor_intersect_edge);
+	RUN(test_linprog2d_vert_infeasible);
+	RUN(test_linprog2d_hatches);
 	RUN(test_linprog2d_nr_example);
 	RUN(test_linprog2d_barnfm10e_example);
+#ifndef LINPROG2D_NO_ALLOC
+	RUN(test_linprog2d_solve_simple_nr_example);
+	RUN(test_linprog2d_solve_simple_barnfm10e_example);
+	RUN(test_linprog2d_solve_simple_fail);
+#endif
 
 	fprintf(stderr, ANSI_GRAY "=====" ANSI_RESET "\n");
 	if (n_failed) {
