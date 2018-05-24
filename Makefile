@@ -43,7 +43,7 @@ test: build/test/test_linprog2d
 
 cov: build/test/test_linprog2d_cov
 	./build/test/test_linprog2d_cov
-	gcovr -r . --html --html-details -o test_linprog2d_coverage.html
+	gcovr -e test/test_linprog2d.c -r . --html --html-details -o test_linprog2d_coverage.html
 
 clean:
 	rm -Rf *.gcda *.gcno *.gcov *.vgcore build/linprog2d.o build/liblinprog2d.a build/liblinprog2d.so build/test/test_linprog2d build/test/test_linprog2d_cov test_linprog2d_coverage*.html
