@@ -115,7 +115,7 @@ static struct mat22 mat22_create(double a11, double a12, double a21,
  */
 static struct mat22 mat22_rot(double x, double y) {
 	const double h = hypot_(x, y);
-	return mat22_create(-y / h, -x / h, x / h, -y / h);
+	return mat22_create(y / h, -x / h, x / h, y / h);
 }
 
 /******************************************************************************
@@ -168,24 +168,43 @@ static linprog2d_result_t linprog2d_result_unbounded() {
 }
 
 /**
+ * Used internally by linprog2d_result_point() and linprog2d_result_edge() to
+ * transform the result back to the original coordinate system.
+ */
+static void linprog2d_result_transform_back(const struct mat22 *R,
+                                            const struct vec2 *o, double *x,
+                                            double *y) {
+	double xt, yt;
+	xt = *x + o->x, yt = *y + o->y; /* Undo the offset */
+
+	/* Rotate back by multiplying with the inverse of R, which happens to be the
+	   transpose (since R is a rotation matrix) */
+	*x = R->a11 * xt + R->a21 * yt;
+	*y = R->a12 * xt + R->a22 * yt;
+}
+
+/**
  * Transforms the given point (x, y) back to the original coordinate system and
  * returns a corresponding linprog2d_result instance.
  */
 static linprog2d_result_t linprog2d_result_point(const struct mat22 *R,
                                                  const struct vec2 *o, double x,
                                                  double y) {
-	struct vec2 res;
+	linprog2d_result_transform_back(R, o, &x, &y);
+	return linprog2d_result_create(LP2D_POINT, x, y, 0.0, 0.0);
+}
 
-	/* Undo the offset */
-	x = x + o->x, y = y + o->y;
-
-	/* Rotate back by multiplying with the inverse of R, which happens to be the
-	   transpose (since R is a rotation matrix) */
-	res.x = R->a11 * x + R->a21 * y;
-	res.y = R->a12 * x + R->a22 * y;
-
-	/* Return the transformed point. */
-	return linprog2d_result_create(LP2D_POINT, res.x, res.y, 0.0, 0.0);
+/**
+ * Transforms the given point (x, y) back to the original coordinate system and
+ * returns a corresponding linprog2d_result instance.
+ */
+static linprog2d_result_t linprog2d_result_edge(const struct mat22 *R,
+                                                const struct vec2 *o, double x1,
+                                                double y1, double x2,
+                                                double y2) {
+	linprog2d_result_transform_back(R, o, &x1, &y1);
+	linprog2d_result_transform_back(R, o, &x2, &y2);
+	return linprog2d_result_create(LP2D_EDGE, x1, y1, x2, y2);
 }
 
 /******************************************************************************
@@ -795,6 +814,7 @@ static struct linprog2d_extremum linprog2d_track_extrema(
 #define LOC_LEFT 2
 #define LOC_RIGHT 3
 #define LOC_HERE 4
+#define LOC_HERE_EDGE 5
 
 /**
  * Determines where the optimum is w.r.t. the given median mx.
@@ -823,10 +843,25 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 	}
 
 	if (e_floor.valid) {
-		if (e_floor.min_dx <= 0 && e_floor.max_dx >= 0) {
+		if (feq_(e_floor.min_dx, 0.0) && !feq_(e_floor.max_dx, 0.0)) {
+			/* Solution is an edge, but this is the right-most point. */
+			return LOC_LEFT;
+		} else if (feq_(e_floor.max_dx, 0.0) && !feq_(e_floor.min_dx, 0.0)) {
+			/* Solution is an edge, but this is the left-most point. */
+			return LOC_RIGHT;
+		} else if (feq_(e_floor.max_dx, 0.0) && feq_(e_floor.max_dx, 0.0)) {
+			/* This one is tough. The floor is horizontal, which means that the
+			   solution is an edge, but there is no intersection with another
+			   floor constraint that would allow us to progress naturally. We
+			   must compute the intersection between the horizontal floor and
+			   all other floors/ceils and return the min/max. Signal this by
+			   returning LOC_HERE_EDGE. */
+			return LOC_HERE_EDGE;
+		} else if (e_floor.min_dx < 0.0 && e_floor.max_dx > 0.0) {
+			/* Vee-shape. This is the solution */
 			*y = e_floor.y;
 			return LOC_HERE;
-		} else if (e_floor.min_dx > 0) {
+		} else if (e_floor.min_dx > 0.0) {
 			return LOC_LEFT;
 		} else {
 			return LOC_RIGHT;
@@ -834,6 +869,131 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 	}
 
 	return LOC_UNBOUNDED; /* no floor constraint; problem is not bounded */
+}
+
+/**
+ * Used internally in linprog2d_calculate_edge to check intersections between
+ * the top-most horizontal floor constraint and all other ceil/floor
+ * constraints.
+ */
+static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
+                                                   const unsigned int *idcs,
+                                                   unsigned int idcs_len,
+                                                   unsigned int if0,
+                                                   double mx) {
+	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h;
+	double rx1, ry1;
+	unsigned int i;
+
+	/* Iterate over all floor and ceiling constraints and calculate the
+	   intersection with our ceiling constraint. */
+	for (i = 0; i < idcs_len; i++) {
+		unsigned int i1 = idcs[i];
+		if (i1 == if0) { /* Skip self-itersections */
+			continue;
+		}
+		if (linprog2d_calculate_intersect(Gx[if0], Gy[if0], h[if0], Gx[i1],
+		                                  Gy[i1], h[i1], &rx1, &ry1)) {
+			if (rx1 < mx && rx1 > prog->x0) {
+				prog->x0 = rx1;
+			}
+			if (rx1 > mx && rx1 < prog->x1) {
+				prog->x1 = rx1;
+			}
+		}
+	}
+}
+
+/**
+ * We know that mx is optimal, but it is part of an entire edge. This function
+ * computes the beginning and end of the edge and returns it.
+ */
+static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
+                                                   double mx) {
+	unsigned int i, if0;
+	const double *dx = prog->dx, *y0 = prog->y0;
+	double ry0 = -HUGE_VAL;
+
+	/* Find the top-most horizontal floor constraint. This must also be the
+	   top-most horizontal floor constraint at mx. This function will only be
+	   called if such a constraint exists. */
+	for (i = 0; i < prog->floor_len; i++) {
+		if (feq_(dx[i], 0.0) && y0[i] > ry0) {
+			ry0 = y0[i];
+			if0 = i;
+		}
+	}
+
+	/* Calculate all intersections between if0 and the ceil/floor constraints,
+	   update prog->x0, prog->x1 accordingly */
+	linprog2d_calculate_edge_intersections(prog, prog->ceil, prog->ceil_len,
+	                                       if0, mx);
+	linprog2d_calculate_edge_intersections(prog, prog->floor, prog->floor_len,
+	                                       if0, mx);
+
+	/* Return the actual edge */
+	return linprog2d_result_edge(&(prog->R), &(prog->o), prog->x0, ry0,
+	                             prog->x1, ry0);
+}
+
+/**
+ * Calculates the optimal point for a single remaining floor and ceil
+ * constraint. This is the last step in the linprog2d_solve() function.
+ */
+static linprog2d_result_t linprog2d_calculate_result(linprog2d_data_t *prog) {
+	/* Aliases */
+	const unsigned int ic0 = prog->ceil[0], if0 = prog->floor[0];
+	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h;
+	const double *dx = prog->dx, *y0 = prog->y0;
+	double x0 = prog->x0, x1 = prog->x1, ry0, ry1;
+
+	/* There is no floor constraint. The problem is unbounded. */
+	if (prog->floor_len == 0U) {
+		return linprog2d_result_unbounded();
+	}
+
+	/* If there is a single ceiling constraint left, compute the intersection
+	   point with the floor constraint and adapt the left or right bound
+	   accordingly. */
+	if (prog->ceil_len > 0U) {
+		double ix, iy;
+		if (linprog2d_calculate_intersect(Gx[ic0], Gy[ic0], h[ic0], Gx[if0],
+		                                  Gy[if0], h[if0], &ix, &iy)) {
+			if (dx[if0] > dx[ic0]) {
+				x1 = fmin_(x1, ix); /* optimum is on the left side, move x1 */
+			} else {
+				x0 = fmax_(x0, ix); /* optimum is on the right side, move x0 */
+			}
+		} else {
+			/* Ceil and floor are parallel. Abort if problem is not feasible. */
+			if (!feq_(y0[if0], y0[ic0]) && y0[if0] > y0[ic0]) {
+				/* y-offset of floor constraint above the ceiling constraint. */
+				return linprog2d_result_infeasible();
+			}
+		}
+	}
+
+	/* Return the lowest point on the remaining floor constraint. */
+	ry0 = y0[if0] + x0 * dx[if0], ry1 = y0[if0] + x1 * dx[if0];
+	if (feq_(dx[if0], 0.0)) { /* Floor is horizontal. Result may be a line. */
+		if (x0 > -HUGE_VAL && x1 < HUGE_VAL) {
+			/* Result is a line. Return this line. */
+			return linprog2d_result_edge(&(prog->R), &(prog->o), x0, ry0, x1,
+			                             ry1);
+		} else {
+			return linprog2d_result_unbounded();
+		}
+	} else if (dx[if0] > 0.0) { /* Minimum is on the left */
+		if (x0 <= -HUGE_VAL) {
+			return linprog2d_result_unbounded();
+		}
+		return linprog2d_result_point(&(prog->R), &(prog->o), x0, ry1);
+	} else /* if (dx[if0] < 0.0) */ { /* Minimum is on the right */
+		if (x1 >= HUGE_VAL) {
+			return linprog2d_result_unbounded();
+		}
+		return linprog2d_result_point(&(prog->R), &(prog->o), x1, ry1);
+	}
 }
 
 /******************************************************************************
@@ -908,8 +1068,11 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 	linprog2d_calculate_yoffset_form(prog->floor, prog->floor_len, prog->Gx,
 	                                 prog->Gy, prog->h, prog->dx, prog->y0);
 
-	/* Repeat until there is at most one floor and ceil constraint left. */
-	while (prog->floor_len > 1U || prog->ceil_len > 1U) {
+	/* Repeat until there is at most one floor and ceil constraint left or the
+	   left and right bounds are invalid. */
+	while ((prog->floor_len != 0U) &&
+	       (prog->floor_len > 1U || prog->ceil_len > 1U) &&
+	       ((prog->x1 > prog->x0) || feq_(prog->x1, prog->x0))) {
 		/* Calculate constraint intersection points. Of those constraints that
 		   are parallel or have an intersection point outside of [x0, x1], throw
 		   one away. Furthermore, if we calculated a median in the last round
@@ -948,13 +1111,13 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 				break;
 			case LOC_HERE:
 				return linprog2d_result_point(&prog->R, &prog->o, x, y);
+			case LOC_HERE_EDGE:
+				return linprog2d_calculate_edge(prog, x);
 		}
 	}
 
-	/* TODO: only one floor/ceil constraint left, compute intersections with
-	   other constraints and return optimum. */
-
-	return linprog2d_result_err();
+	/* Compute the results from the remaining floor and ceil constraint */
+	return linprog2d_calculate_result(prog);
 }
 
 linprog2d_result_t linprog2d_solve_simple(double cx, double cy,

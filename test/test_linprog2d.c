@@ -513,14 +513,14 @@ void test_linprog2d_condition_problem_rotation() {
 	linprog2d_reset(&prog, 0U);
 
 	EXPECT_EQ(TRUE,
-	          linprog2d_condition_problem(&prog, 0.0, -1.0, NULL, NULL, NULL));
+	          linprog2d_condition_problem(&prog, 0.0, 1.0, NULL, NULL, NULL));
 	EXPECT_EQ(1.0, prog.R.a11);
 	EXPECT_EQ(0.0, prog.R.a12);
 	EXPECT_EQ(0.0, prog.R.a21);
 	EXPECT_EQ(1.0, prog.R.a22);
 
 	EXPECT_EQ(TRUE,
-	          linprog2d_condition_problem(&prog, 0.0, -2.0, NULL, NULL, NULL));
+	          linprog2d_condition_problem(&prog, 0.0, 2.0, NULL, NULL, NULL));
 	EXPECT_EQ(1.0, prog.R.a11);
 	EXPECT_EQ(0.0, prog.R.a12);
 	EXPECT_EQ(0.0, prog.R.a21);
@@ -573,7 +573,7 @@ void test_linprog2d_condition_problem_offset1() {
 	linprog2d_reset(&prog, 4U);
 	prog.Gx = Gx_tar, prog.Gy = Gy_tar, prog.h = h_tar;
 
-	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, -1.0, Gx, Gy, h));
+	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, 1.0, Gx, Gy, h));
 
 	EXPECT_EQ(1.0, Gx_tar[0]);
 	EXPECT_EQ(-1.0, Gx_tar[1]);
@@ -607,7 +607,7 @@ void test_linprog2d_condition_problem_offset2() {
 	linprog2d_reset(&prog, 4U);
 	prog.Gx = Gx_tar, prog.Gy = Gy_tar, prog.h = h_tar;
 
-	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, -1.0, Gx, Gy, h));
+	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, 1.0, Gx, Gy, h));
 
 	EXPECT_EQ(1.0, Gx_tar[0]);
 	EXPECT_EQ(-1.0, Gx_tar[1]);
@@ -639,7 +639,7 @@ void test_linprog2d_condition_problem_offset_and_rescale_single() {
 	linprog2d_reset(&prog, 1U);
 	prog.Gx = Gx_tar, prog.Gy = Gy_tar, prog.h = h_tar;
 
-	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, -1.0, Gx, Gy, h));
+	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, 1.0, Gx, Gy, h));
 
 	EXPECT_EQ(-1.0, Gx_tar[0]);
 	EXPECT_EQ(0.25, Gy_tar[0]);
@@ -657,7 +657,7 @@ void test_linprog2d_condition_problem_offset_and_rescale() {
 	linprog2d_reset(&prog, 2U);
 	prog.Gx = Gx_tar, prog.Gy = Gy_tar, prog.h = h_tar;
 
-	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, -1.0, Gx, Gy, h));
+	EXPECT_EQ(TRUE, linprog2d_condition_problem(&prog, 0.0, 1.0, Gx, Gy, h));
 
 	EXPECT_EQ(-1.0, Gx_tar[0]);
 	EXPECT_EQ(-1.0, Gx_tar[1]);
@@ -911,7 +911,7 @@ void test_linprog2d_track_min_max() {
 #define MKPROG(C)                                                         \
 	linprog2d_result_t res;                                               \
 	linprog2d_data_t prog;                                                \
-	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C / 2];          \
+	double Gx[C], Gy[C], h[C], dx[C], y0[C], x_intersect[C];          \
 	unsigned int ceil[C], floor[C], tmp[C];                               \
 	prog.Gx = Gx, prog.Gy = Gy, prog.h = h, prog.dx = dx, prog.y0 = y0;   \
 	prog.x_intersect = x_intersect, prog.ceil = ceil, prog.floor = floor; \
@@ -937,7 +937,7 @@ void test_linprog2d_solve_vee() {
 
 	MKPROG(2U)
 
-	res = linprog2d_solve(&prog, 0.0, -1.0, Gx_src, Gy_src, h_src, 2U);
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
 	EXPECT_EQ(LP2D_POINT, res.status);
 	EXPECT_EQ(0.0, res.x1);
 	EXPECT_EQ(0.0, res.y1);
@@ -962,13 +962,13 @@ void test_linprog2d_solve_vee_offset() {
 
 	MKPROG(2U)
 
-	res = linprog2d_solve(&prog, 0.0, -1.0, Gx_src, Gy_src, h_src, 2U);
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
 	EXPECT_EQ(LP2D_POINT, res.status);
 	EXPECT_EQ(1.0, res.x1);
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel() {
+void test_linprog2d_solve_vee_offset_parallel1() {
 	/* Result has its minimum at (1, 2)
 
 	 \  \x^xxxxxxx/  /
@@ -987,7 +987,46 @@ void test_linprog2d_solve_vee_offset_parallel() {
 
 	MKPROG(4U)
 
-	res = linprog2d_solve(&prog, 0.0, -1.0, Gx_src, Gy_src, h_src, 4U);
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 4U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_EQ(1.0, res.x1);
+	EXPECT_EQ(2.0, res.y1);
+}
+
+void test_linprog2d_solve_vee_offset_parallel2() {
+	double Gx_src[4] = {1.0, -1.0, -1.0, 1.0};
+	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
+	double h_src[4] = {3.0, 1.0, -1.0, 0.0};
+
+	MKPROG(4U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 4U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_EQ(1.0, res.x1);
+	EXPECT_EQ(2.0, res.y1);
+}
+
+void test_linprog2d_solve_vee_offset_parallel3() {
+	double Gx_src[4] = {1.0, -1.0, 1.0, -1.0};
+	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
+	double h_src[4] = {3.0, 1.0, 0.0, -1.0};
+
+	MKPROG(4U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 4U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_EQ(1.0, res.x1);
+	EXPECT_EQ(2.0, res.y1);
+}
+
+void test_linprog2d_solve_vee_offset_parallel4() {
+	double Gx_src[4] = {1.0, 1.0, -1.0, -1.0};
+	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
+	double h_src[4] = {3.0, 0.0, 1.0, -1.0};
+
+	MKPROG(4U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 4U);
 	EXPECT_EQ(LP2D_POINT, res.status);
 	EXPECT_EQ(1.0, res.x1);
 	EXPECT_EQ(2.0, res.y1);
@@ -1016,6 +1055,243 @@ void test_linprog2d_solve_vee_offset_rotated() {
 	EXPECT_EQ(LP2D_POINT, res.status);
 	EXPECT_NEAR(1.0, res.x1);
 	EXPECT_NEAR(2.0, res.y1);
+}
+
+void test_linprog2d_single_floor_horz_unbounded() {
+	/* Result is unbounded.
+
+	xxxxxx^xxxxxxxxxxxxxxx
+	xxxxxx|xxxxxxxxxxxxxxx
+	xxxxxx|xxxxxxxxxxxxxxx
+	xxxxxx|xxxxxxxxxxxxxxx
+	X-X-X-X-X-X-X-X-X-X-X-
+	      |
+	      |
+	------|--------------->
+	      |                               */
+
+	double Gx_src[1] = {0.0};
+	double Gy_src[1] = {1.0};
+	double h_src[1] = {1.0};
+
+	MKPROG(1U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 1U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_single_floor_horz_edge() {
+	/* Result is on a line.
+
+	   |xx^xxxxxxx|
+	   |xx|xxxxxxx|
+	   |xx|xxxxxxx|
+	   |xx|xxxxxxx|
+	---|XXXXXXXXXX|-------
+	   |  |       |
+	   |  |       |
+	---|--|-------|------->
+	   |  |       |                       */
+
+	double Gx_src[3] = {0.0, 1.0, -1.0};
+	double Gy_src[3] = {1.0, 0.0,  0.0};
+	double h_src[3] = {1.0, -2.0, -3.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_EQ(-2.0, res.x1);
+	EXPECT_EQ(1.0, res.y1);
+	EXPECT_EQ(3.0, res.x2);
+	EXPECT_EQ(1.0, res.y2);
+}
+
+void test_linprog2d_single_floor_ceil_parallel1() {
+	/* Result is on a line.
+
+	      ^
+	----------------------
+	xxxxxx|xxxxxxxxxxxxxxx
+	xxxxxx|xxxxxxxxxxxxxxx
+	X-X-X-X-X-X-X-X-X-X-X-
+	      |
+	      |
+	------|--------------->
+	      |                               */
+
+	double Gx_src[2] = {0.0, 0.0};
+	double Gy_src[2] = {1.0, -1.0};
+	double h_src[2] = {1.0, -3.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_single_floor_ceil_parallel2() {
+	/* Result is on a line.
+
+	      ^
+	----------------------
+	xxxxxx|xxxxxxxxxxxxxxx
+	xxxxxx|xxxxxxxxxxxxxxx
+	X-X-X-X-X-X-X-X-X-X-X-
+	      |
+	      |
+	------|--------------->
+	      |                               */
+
+	double Gx_src[2] = {0.0, 0.0};
+	double Gy_src[2] = {1.0, -1.0};
+	double h_src[2] = {1.0, 3.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_INFEASIBLE, res.status);
+}
+
+void test_linprog2d_floor_ceil_intersect_edge1() {
+	/* Result is on a line.
+
+	\xxxxx^xxxxx\
+	 \xxxx|xxxxxx\
+	  \xxx|xxxxxxx\
+	   \xx|xxxxxxxx\
+	----\X|XXXXXXXXX\-----
+	     \|          \
+	      |           \
+	------|\-----------\-->
+	      | \           \                 */
+
+	double Gx_src[3] = {0.0, -1.0, 1.0};
+	double Gy_src[3] = {1.0, -1.0, 1.0};
+	double h_src[3] = {1.0, -5.0, -5.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_EQ(-6.0, res.x1);
+	EXPECT_EQ(1.0, res.y1);
+	EXPECT_EQ(4.0, res.x2);
+	EXPECT_EQ(1.0, res.y2);
+}
+
+void test_linprog2d_floor_ceil_intersect_edge2() {
+	/* Result is on a line.
+              /\
+	      ^  /xx\
+	      | /xxxx\
+	      |/xxxxxx\
+	      /xxxxxxxx\
+	-----/|XXXXXXXXX\-----
+	    / |          \
+	   /  |           \
+	--/---|------------\-->
+	 /    |             \                 */
+
+	double Gx_src[3] = {0.0,  1.0, -1.0};
+	double Gy_src[3] = {1.0, -1.0, -1.0};
+	double h_src[3] = {1.0, -5.0, -5.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_EQ(-4.0, res.x1);
+	EXPECT_EQ(1.0, res.y1);
+	EXPECT_EQ(4.0, res.x2);
+	EXPECT_EQ(1.0, res.y2);
+}
+
+void test_linprog2d_floor_ceil_intersect_edge3() {
+	/* Result is on a line.
+
+	      ^  /xxxxxxxxxxx/
+	      | /xxxxxxxxxxx/
+	      |/xxxxxxxxxxx/
+	      /xxxxxxxxxxx/
+	---- /X-X-X-X-X-X/----
+	    / |         /
+	   /  |        /
+	--/---|-------/------->
+	 /    |      /                        */
+
+	double Gx_src[3] = {0.0, 1.0, -1.0};
+	double Gy_src[3] = {1.0, -1.0, 1.0};
+	double h_src[3] = {1.0, -5.0, -5.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_EQ(-4.0, res.x1);
+	EXPECT_EQ(1.0, res.y1);
+	EXPECT_EQ(6.0, res.x2);
+	EXPECT_EQ(1.0, res.y2);
+}
+
+void test_linprog2d_floor_floor_intersect_edge() {
+	/* Result is on a line.
+
+	\xxxxx^xxxxxxxxxxx/
+	 \xxxx|xxxxxxxxxx/
+	  \xxx|xxxxxxxxx/
+	   \xx|xxxxxxxx/
+	----\X|XXXXXXX/-------
+	     \|      /
+	      |     /
+	------|\---/---------->
+	      | \ /                           */
+
+	double Gx_src[3] = {0.0, 1.0, -1.0};
+	double Gy_src[3] = {1.0, 1.0, 1.0};
+	double h_src[3] = {1.0, -5.0, 0.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_EQ(-6.0, res.x1);
+	EXPECT_EQ(1.0, res.y1);
+	EXPECT_EQ(1.0, res.x2);
+	EXPECT_EQ(1.0, res.y2);
+}
+
+void test_linprog2d_nr_example() {
+	/* Example from Numerical Recipes 3rd ed. pp. 529; see p. 534 for fig. */
+
+	double Gx_src[3] = {-2.0, 1.0, -1.0};
+	double Gy_src[3] = {-1.0, 1.0, -3.0};
+	double h_src[3] = {-70.0, 40.0, -90.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, -40.0, -60.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(24.0, res.x1);
+	EXPECT_NEAR(22.0, res.y1);
+}
+
+void test_linprog2d_barnfm10e_example() {
+	/* Example from random lecture found on the internet
+	   http://www3.govst.edu/kriordan/files/ssc/math161/ppt/barnfm10e_ppt_5_2.ppt */
+
+	double Gx_src[5] = {1.0, 0.0, -1.0, -8.0, -4.0};
+	double Gy_src[5] = {0.0, 1.0, 0.0, -8.0, -12.0};
+	double h_src[5] = {0.0, 0.0, -15.0, -160.0, -180.0};
+
+	unsigned int i;
+
+	MKPROG(5U)
+
+	res = linprog2d_solve(&prog, -5.0, -10.0, Gx_src, Gy_src, h_src, 5U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(7.5, res.x1);
+	EXPECT_NEAR(12.5, res.y1);
 }
 
 /******************************************************************************
@@ -1048,8 +1324,21 @@ int main() {
 	RUN(test_linprog2d_track_min_max);
 	RUN(test_linprog2d_solve_vee);
 	RUN(test_linprog2d_solve_vee_offset);
-	RUN(test_linprog2d_solve_vee_offset_parallel);
+	RUN(test_linprog2d_solve_vee_offset_parallel1);
+	RUN(test_linprog2d_solve_vee_offset_parallel2);
+	RUN(test_linprog2d_solve_vee_offset_parallel3);
+	RUN(test_linprog2d_solve_vee_offset_parallel4);
 	RUN(test_linprog2d_solve_vee_offset_rotated);
+	RUN(test_linprog2d_single_floor_horz_unbounded);
+	RUN(test_linprog2d_single_floor_horz_edge);
+	RUN(test_linprog2d_single_floor_ceil_parallel1);
+	RUN(test_linprog2d_single_floor_ceil_parallel2);
+	RUN(test_linprog2d_floor_ceil_intersect_edge1);
+	RUN(test_linprog2d_floor_ceil_intersect_edge2);
+	RUN(test_linprog2d_floor_ceil_intersect_edge3);
+	RUN(test_linprog2d_floor_floor_intersect_edge);
+	RUN(test_linprog2d_nr_example);
+	RUN(test_linprog2d_barnfm10e_example);
 
 	fprintf(stderr, ANSI_GRAY "=====" ANSI_RESET "\n");
 	if (n_failed) {

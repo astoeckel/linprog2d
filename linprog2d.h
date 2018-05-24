@@ -47,9 +47,7 @@ enum linprog2d_status {
 	LP2D_INFEASIBLE,
 
 	/**
-	 * The problem is unbounded. The result should be interpreted as: any point
-	 * starting at (x1, y1) in direction of the vector (x2, y2) is a valid
-	 * solution.
+	 * The problem is unbounded.
 	 */
 	LP2D_UNBOUNDED,
 
