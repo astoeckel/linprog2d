@@ -4,7 +4,7 @@
 
 The library can also be compiled to JavaScript/WebAssembly.
 
-**[Launch interactive visualization](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
+**[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
 The library is written in pure C89/C90 and has no dependencies aside from the standard-library functions `sqrt()`, `fabs()`, `malloc()`, and `free()` (heap allocations can be deactivated by defining `LINPROG2D_NO_ALLOC`).
 
