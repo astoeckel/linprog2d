@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-.PHONY: all test clean cov
+.PHONY: all test clean cov wasm dist
 
 CCFLAGS := -g -fPIC --std=c89 -Wall -Wextra -pedantic-errors
 
@@ -29,6 +29,18 @@ build/liblinprog2d.a: build/linprog2d.o
 
 build/liblinprog2d.so: build/linprog2d.o
 	gcc -shared -o build/liblinprog2d.so build/linprog2d.o -lm
+
+build/linprog2d.wasm: linprog2d.c linprog2d.h
+	emcc -DLINPROG2D_REDUCED_INTERFACE -Oz -s WASM=1 -s SIDE_MODULE=1 linprog2d.c -o build/linprog2d.wasm
+
+build/linprog2d.wasm.b64: build/linprog2d.wasm
+	base64 -w0 build/linprog2d.wasm > build/linprog2d.wasm.b64
+
+build/linprog2d.js: build/linprog2d.wasm.b64 linprog2d.in.js
+	perl -pe 's/<_WASM_CODE_HERE_>/`cat build\/linprog2d.wasm.b64`/ge' linprog2d.in.js > build/linprog2d.js
+
+build/linprog2d.min.js: build/linprog2d.js
+	minify build/linprog2d.js > build/linprog2d.min.js # npm i babel-minify
 
 build/test/test_linprog2d: test/test_linprog2d.c linprog2d.c linprog2d.h
 	mkdir -p build/test
@@ -45,6 +57,22 @@ cov: build/test/test_linprog2d_cov
 	./build/test/test_linprog2d_cov
 	gcovr -e test/test_linprog2d.c -r . --html --html-details -o test_linprog2d_coverage.html
 
+wasm: build/linprog2d.js build/linprog2d.min.js
+
+dist: wasm
+	cp build/linprog2d.min.js dist/
+
 clean:
-	rm -Rf *.gcda *.gcno *.gcov *.vgcore build/linprog2d.o build/liblinprog2d.a build/liblinprog2d.so build/test/test_linprog2d build/test/test_linprog2d_cov test_linprog2d_coverage*.html
+	rm -Rf \
+		*.gcda *.gcno *.gcov *.vgcore \
+		build/linprog2d.o \
+		build/liblinprog2d.a \
+		build/liblinprog2d.so \
+		build/linprog2d.js \
+		build/linprog2d.min.js \
+		build/linprog2d.wasm.b64 \
+		build/linprog2d.wasm \
+		build/test/test_linprog2d \
+		build/test/test_linprog2d_cov \
+		test_linprog2d_coverage*.html
 

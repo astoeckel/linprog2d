@@ -34,6 +34,10 @@
 #define LP2D_EXPORT
 #endif
 
+#ifdef LINPROG2D_REDUCED_INTERFACE
+#define LINPROG2D_NO_ALLOC
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,29 +49,29 @@ enum linprog2d_status {
 	 * There is not enough memory in the given linprog2d instance to solve the
 	 * problem or the gradient is zero.
 	 */
-	LP2D_ERROR,
+	LP2D_ERROR = 0,
 
 	/**
 	 * There is no solution to this problem, i.e. the solution space is empty.
 	 * This may happen if there are constraints that contradict each other.
 	 */
-	LP2D_INFEASIBLE,
+	LP2D_INFEASIBLE = 1,
 
 	/**
 	 * The problem is unbounded.
 	 */
-	LP2D_UNBOUNDED,
+	LP2D_UNBOUNDED = 2,
 
 	/**
 	 * There is an entire edge along which the solution is optimal. The edge is
 	 * described by the two points (x1, y1) - (x2, y2).
 	 */
-	LP2D_EDGE,
+	LP2D_EDGE = 3,
 
 	/**
 	 * The solution is a single point stored in (x1, y1).
 	 */
-	LP2D_POINT
+	LP2D_POINT = 4
 };
 
 /**
@@ -75,17 +79,17 @@ enum linprog2d_status {
  */
 struct linprog2d_result {
 	/**
-	 * Enum describing how the fields of this structure should be interpreted.
-	 */
-	enum linprog2d_status status;
-
-	/**
 	 * The result is encoded as two points. If the optimum is a single point,
 	 * this point is stored as (x1, y1). Otherwise, if the optimum is a line or
 	 * a ray, the result is encoded in the pair (x1, y1), (x2, y2). Also see the
 	 * documentation for linprog2d_result_type for more details.
 	 */
 	double x1, y1, x2, y2;
+
+	/**
+	 * Enum describing how the fields of this structure should be interpreted.
+	 */
+	enum linprog2d_status status;
 };
 
 /**
@@ -104,12 +108,6 @@ typedef void linprog2d_t;
 typedef unsigned long int linprog2d_size_t;
 
 /**
- * Computes the number of bytes required to store a Linprog2DSolver instance
- * with the given capacity.
- */
-linprog2d_size_t LP2D_EXPORT linprog2d_mem_size(unsigned int capacity);
-
-/**
  * Constructs a linprog2d instance with the given capacity inplace at the
  * given memory location. The required size of the memory region can be computed
  * by calling linprog2d_mem_size(). You may want to use linprog2d_create()
@@ -124,6 +122,21 @@ linprog2d_size_t LP2D_EXPORT linprog2d_mem_size(unsigned int capacity);
  * linprog2d_create.
  */
 linprog2d_t LP2D_EXPORT *linprog2d_init(unsigned int capacity, char *mem);
+
+/**
+ * Solves a two-dimensional linear programming problem.
+ */
+linprog2d_result_t LP2D_EXPORT linprog2d_solve(linprog2d_t *prog, double cx,
+                                               double cy, const double *Gx,
+                                               const double *Gy,
+                                               const double *h, unsigned int n);
+
+#ifndef LINPROG2D_REDUCED_INTERFACE
+/**
+ * Computes the number of bytes required to store a Linprog2DSolver instance
+ * with the given capacity.
+ */
+linprog2d_size_t LP2D_EXPORT linprog2d_mem_size(unsigned int capacity);
 
 /**
  * Creates a new linprog2d instance that is able to represent at least n
@@ -147,14 +160,6 @@ void LP2D_EXPORT linprog2d_free(linprog2d_t *prog);
 unsigned int LP2D_EXPORT linprog2d_capacity(const linprog2d_t *prog);
 
 /**
- * Solves a two-dimensional linear programming problem.
- */
-linprog2d_result_t LP2D_EXPORT linprog2d_solve(linprog2d_t *prog, double cx,
-                                               double cy, const double *Gx,
-                                               const double *Gy,
-                                               const double *h, unsigned int n);
-
-/**
  * Convenience function which allocates a new linprog2d_t instance, calls
  * its solve function, destroys the instance and returns the result. If you
  * want to reuse the same linprog2d_t instance, use linprog2d_create,
@@ -171,6 +176,7 @@ linprog2d_result_t LP2D_EXPORT linprog2d_solve_simple(double cx, double cy,
                                                       const double *Gy,
                                                       const double *h,
                                                       unsigned int n);
+#endif /* LINPROG2D_REDUCED_INTERFACE */
 
 #ifdef __cplusplus
 }

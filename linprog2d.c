@@ -998,44 +998,9 @@ static linprog2d_result_t linprog2d_calculate_result(linprog2d_data_t *prog) {
  * EXTERNAL API                                                               *
  ******************************************************************************/
 
-linprog2d_size_t linprog2d_mem_size(unsigned int capacity) {
-	linprog2d_size_t res = 0UL;
-
-	/* Main datastructure plus alignment */
-	res += sizeof(linprog2d_data_t) + 64UL;
-
-	/* Space for the Gx, Gy, h, dx, y0, x_intersect lists plus alignment. The
-	   x_intersect list only has half the length. */
-	res += (sizeof(double) * 5UL + sizeof(double) / 2UL) * capacity + 64UL * 6UL;
-
-	/* Space for the ceil, floor, tmp lists plus alignment. */
-	res += sizeof(unsigned int) * 3UL * capacity + 64UL * 3UL;
-
-	return res;
-}
-
 linprog2d_t *linprog2d_init(unsigned int capacity, char *mem) {
 	return linprog2d_init_internal((linprog2d_data_t *)mem, capacity,
 	                               mem + sizeof(linprog2d_data_t));
-}
-
-linprog2d_t *linprog2d_create(unsigned int capacity) {
-#ifndef LINPROG2D_NO_ALLOC
-	return linprog2d_init(capacity,
-	                      (char *)malloc(linprog2d_mem_size(capacity)));
-#else
-	return NULL;
-#endif
-}
-
-void linprog2d_free(linprog2d_t *prog) {
-#ifndef LINPROG2D_NO_ALLOC
-	free(prog); /* Free the previously allocated memory */
-#endif
-}
-
-unsigned int linprog2d_capacity(const linprog2d_t *prog) {
-	return ((linprog2d_data_t *)prog)->capacity;
 }
 
 linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
@@ -1047,7 +1012,7 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 
 	/* Make sure the given linprog2d instance has sufficient memory to solve
 	   the problem. If not, return with an error. */
-	if (!prog || linprog2d_capacity(prog) < n) {
+	if (!prog || prog->capacity < n) {
 		return linprog2d_result_err();
 	}
 
@@ -1095,8 +1060,6 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 		switch (linprog2d_locate_optimum(prog, x, &y)) {
 			case LOC_INFEASIBLE:
 				return linprog2d_result_infeasible();
-			case LOC_UNBOUNDED:
-				return linprog2d_result_unbounded();
 			case LOC_LEFT:
 				prog->x1 = fmin_(prog->x1, x);
 				optimum_is_left = TRUE;
@@ -1118,6 +1081,42 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 	return linprog2d_calculate_result(prog);
 }
 
+#ifndef LINPROG2D_REDUCED_INTERFACE
+linprog2d_size_t linprog2d_mem_size(unsigned int capacity) {
+	linprog2d_size_t res = 0UL;
+
+	/* Main datastructure plus alignment */
+	res += sizeof(linprog2d_data_t) + 64UL;
+
+	/* Space for the Gx, Gy, h, dx, y0, x_intersect lists plus alignment. The
+	   x_intersect list only has half the length. */
+	res += (sizeof(double) * 5UL + sizeof(double) / 2UL) * capacity + 64UL * 6UL;
+
+	/* Space for the ceil, floor, tmp lists plus alignment. */
+	res += sizeof(unsigned int) * 3UL * capacity + 64UL * 3UL;
+
+	return res;
+}
+
+linprog2d_t *linprog2d_create(unsigned int capacity) {
+#ifndef LINPROG2D_NO_ALLOC
+	return linprog2d_init(capacity,
+	                      (char *)malloc(linprog2d_mem_size(capacity)));
+#else
+	return NULL;
+#endif
+}
+
+void linprog2d_free(linprog2d_t *prog) {
+#ifndef LINPROG2D_NO_ALLOC
+	free(prog); /* Free the previously allocated memory */
+#endif
+}
+
+unsigned int linprog2d_capacity(const linprog2d_t *prog) {
+	return ((linprog2d_data_t *)prog)->capacity;
+}
+
 linprog2d_result_t linprog2d_solve_simple(double cx, double cy,
                                           const double *Gx, const double *Gy,
                                           const double *h, unsigned int n) {
@@ -1131,3 +1130,4 @@ linprog2d_result_t linprog2d_solve_simple(double cx, double cy,
 #endif /* LINPROG2D_NO_ALLOC */
 	return linprog2d_result_err();
 }
+#endif /* LINPROG2D_REDUCED_INTERFACE */
