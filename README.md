@@ -2,7 +2,7 @@
 
 `liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints) using Megiddo's algorithm.
 
-The library can also be compiled to JavaScript/WebAssembly. Try an interactive demo [here](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html).
+The library can also be compiled to JavaScript/WebAssembly. **[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
 The library is written in pure C89/C90 and has very little dependencies aside from `sqrt` and `malloc`, `free` (the latter dependency can be deactivated by defining `LINPROG2D_NO_ALLOC`).
 
