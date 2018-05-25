@@ -101,8 +101,8 @@ static jmp_buf assert_buffer;
 #define ASSERT_TRUE(is) ASSERT(TRUE, (!!(is)) ? TRUE : FALSE, ==)
 #define EXPECT_FALSE(is) EXPECT(FALSE, (!!(is)) ? TRUE : FALSE, ==)
 #define ASSERT_FALSE(is) ASSERT(FALSE, (!!(is)) ? TRUE : FALSE, ==)
-#define EXPECT_NEAR(should, is) EXPECT_TRUE(feq_(should, is))
-#define ASSERT_NEAR(should, is) ASSERT_TRUE(feq_(should, is))
+#define EXPECT_NEAR(should, is, err) EXPECT_LE(fabs(should - is), err)
+#define ASSERT_NEAR(should, is, err) ASSERT_LE(fabs(should - is), err)
 
 /******************************************************************************
  * Actual unit tests                                                          *
@@ -455,7 +455,7 @@ void test_linprog2d_normalization_coeff() {
 void test_linprog2d_create_and_capacity() {
 	{
 		unsigned int i;
-		linprog2d_data_t *prog = linprog2d_create(128U);
+		linprog2d_data_t *prog = (linprog2d_data_t*)linprog2d_create(128U);
 		ASSERT_NE(NULL, prog);
 		EXPECT_EQ(128U, linprog2d_capacity(prog));
 
@@ -755,7 +755,7 @@ void test_linprog2d_calculate_yoffset_form() {
 	EXPECT_EQ(0.0, y0[2]);
 	EXPECT_EQ(-0.5, y0[3]);
 	EXPECT_EQ(0.0, y0[4]);
-	EXPECT_NEAR(-1.333333333333333333333333333, y0[5]);
+	EXPECT_NEAR(-1.33333, y0[5], 1e-4);
 	EXPECT_EQ(0.0, y0[6]);
 }
 
@@ -920,6 +920,59 @@ void test_linprog2d_track_min_max() {
 	prog.capacity = C;                                                    \
 	prog.tmp = tmp;
 
+void test_linprog2d_solve_empty() {
+	MKPROG(1U)
+	res = linprog2d_solve(&prog, 0.0, 1.0, NULL, NULL, NULL, 0U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_solve_no_floor_single_ceil() {
+	double Gx_src[1] = {1.0};
+	double Gy_src[1] = {-1.0};
+	double h_src[1] = {0.0};
+
+	MKPROG(1U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 1U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_solve_single_floor_multiple_ceil1() {
+	double Gx_src[5] = {1.0, 1.0, -1.0, 1.0, 2.0};
+	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
+	double h_src[5] = {0.0, 3.0, -4.0, 1.0, 3.0};
+
+	MKPROG(5U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 5U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_solve_single_floor_multiple_ceil2() {
+	double Gx_src[5] = {1.0, -1.0, -1.0, 1.0, 2.0};
+	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
+	double h_src[5] = {0.0, 3.0, -4.0, 1.0, 3.0};
+
+	MKPROG(5U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 5U);
+	EXPECT_EQ(LP2D_INFEASIBLE, res.status);
+}
+
+void test_linprog2d_solve_single_floor_multiple_ceil3() {
+	double Gx_src[5] = {1.0, -1.0, -1.0, 1.0, 2.0};
+	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
+	double h_src[5] = {-10.0, -10.0, 20.0, 0.0, 3.0};
+
+	MKPROG(5U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 5U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(-1.3333, res.x1, 1e-4);
+	EXPECT_NEAR(-11.3333, res.y1, 1e-4);
+}
+
+
 void test_linprog2d_solve_vee() {
 	/* Result has its minimum at (0, 0)
 
@@ -1055,8 +1108,8 @@ void test_linprog2d_solve_vee_offset_rotated() {
 
 	res = linprog2d_solve(&prog, -1.0, 0.0, Gx_src, Gy_src, h_src, 2U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(1.0, res.x1);
-	EXPECT_NEAR(2.0, res.y1);
+	EXPECT_NEAR(1.0, res.x1, 1e-4);
+	EXPECT_NEAR(2.0, res.y1, 1e-4);
 }
 
 void test_linprog2d_single_floor_horz_unbounded() {
@@ -1209,6 +1262,33 @@ void test_linprog2d_floor_ceil_intersect_edge2() {
 	EXPECT_EQ(1.0, res.y2);
 }
 
+void test_linprog2d_floor_ceil_intersect_edge2b() {
+	/* Result is on a line.
+	          /\
+	      ^  /xx\
+	      | /xxxx\
+	      |/xxxxxx\
+	      /xxxxxxxx\
+	-----/|XXXXXXXXX\-----
+	    / |          \
+	   /  |           \
+	--/---|------------\-->
+	 /    |             \                 */
+
+	double Gx_src[3] = {0.2981, -0.3936, -0.0};
+	double Gy_src[3] = {-0.2981, -0.3936, 0.7557};
+	double h_src[3] = {-0.0887, 0.0021, -0.1095};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_EDGE, res.status);
+	EXPECT_NEAR(-0.442450, res.x1, 1e-4);
+	EXPECT_NEAR(-0.144899, res.y1, 1e-4);
+	EXPECT_NEAR( 0.139563, res.x2, 1e-4);
+	EXPECT_NEAR(-0.144899, res.y2, 1e-4);
+}
+
 void test_linprog2d_floor_ceil_intersect_edge3() {
 	/* Result is on a line.
 
@@ -1286,6 +1366,99 @@ void test_linprog2d_vert_infeasible() {
 	EXPECT_EQ(LP2D_INFEASIBLE, res.status);
 }
 
+void test_linprog2d_vert_single_floor1() {
+	/*
+	      ^  |x/
+	      |  |/
+	      |  X
+	      | /|
+	      |/ |
+	      /  |
+	     /|  |
+	----/-|--|------------>
+	   /  |  |                            */
+
+	double Gx_src[2] = {1.0, -1.0};
+	double Gy_src[2] = {0.0, 1.0};
+	double h_src[2] = {1.0, 2.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_EQ(1.0, res.x1);
+	EXPECT_EQ(3.0, res.y1);
+}
+
+void test_linprog2d_vert_single_floor2() {
+	/*
+	      ^\x|
+	      | \|
+	      |  X
+	      |  |\
+	      |  | \
+	      |  |  \
+	      |  |   \
+	------|--|----\------->
+	      |  |     \                      */
+
+	double Gx_src[2] = {-1.0, 1.0};
+	double Gy_src[2] = {0.0, 1.0};
+	double h_src[2] = {-1.0, 4.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_EQ(1.0, res.x1);
+	EXPECT_EQ(3.0, res.y1);
+}
+
+void test_linprog2d_vert_single_floor_unbounded1() {
+	/*
+	      ^  |x/
+	      |  |/
+	      |  X
+	      | /|
+	      |/ |
+	      /  |
+	     /|  |
+	----/-|--|------------>
+	   /  |  |                            */
+
+	double Gx_src[2] = {-1.0, -1.0};
+	double Gy_src[2] = {0.0, 1.0};
+	double h_src[2] = {-1.0, 2.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+void test_linprog2d_vert_single_floor_unbounded2() {
+	/*
+	      ^\ |
+	      | \|
+	      |  |
+	      |  |\
+	      |  | \
+	      |  |  \
+	      |  |   \
+	------|--|----\------->
+	      |  |     \                      */
+
+	double Gx_src[2] = {1.0, 1.0};
+	double Gy_src[2] = {0.0, 1.0};
+	double h_src[2] = {1.0, 4.0};
+
+	MKPROG(2U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 2U);
+	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
+}
+
+
 void test_linprog2d_hatches() {
 	double Gx_src[16] = {  1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1};
 	double Gy_src[16] = {  1,   1,   1,   1,   1,   1,   1,   1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1};
@@ -1295,8 +1468,8 @@ void test_linprog2d_hatches() {
 
 	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 16U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(0.0, res.x1);
-	EXPECT_NEAR(-5.0, res.y1);
+	EXPECT_NEAR(0.0, res.x1, 1e-4);
+	EXPECT_NEAR(-5.0, res.y1, 1e-4);
 }
 
 void test_linprog2d_nr_example() {
@@ -1310,8 +1483,8 @@ void test_linprog2d_nr_example() {
 
 	res = linprog2d_solve(&prog, -40.0, -60.0, Gx_src, Gy_src, h_src, 3U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(24.0, res.x1);
-	EXPECT_NEAR(22.0, res.y1);
+	EXPECT_NEAR(24.0, res.x1, 1e-4);
+	EXPECT_NEAR(22.0, res.y1, 1e-4);
 }
 
 void test_linprog2d_barnfm10e_example() {
@@ -1327,8 +1500,8 @@ void test_linprog2d_barnfm10e_example() {
 
 	res = linprog2d_solve(&prog, -5.0, -10.0, Gx_src, Gy_src, h_src, 5U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(7.5, res.x1);
-	EXPECT_NEAR(12.5, res.y1);
+	EXPECT_NEAR(7.5, res.x1, 1e-4);
+	EXPECT_NEAR(12.5, res.y1, 1e-4);
 }
 
 void test_linprog2d_solve_simple_nr_example() {
@@ -1341,8 +1514,8 @@ void test_linprog2d_solve_simple_nr_example() {
 	linprog2d_result_t res =
 	    linprog2d_solve_simple(-40.0, -60.0, Gx_src, Gy_src, h_src, 3U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(24.0, res.x1);
-	EXPECT_NEAR(22.0, res.y1);
+	EXPECT_NEAR(24.0, res.x1, 1e-4);
+	EXPECT_NEAR(22.0, res.y1, 1e-4);
 }
 
 void test_linprog2d_solve_simple_barnfm10e_example() {
@@ -1357,8 +1530,8 @@ void test_linprog2d_solve_simple_barnfm10e_example() {
 	linprog2d_result_t res =
 	    linprog2d_solve_simple(-5.0, -10.0, Gx_src, Gy_src, h_src, 5U);
 	EXPECT_EQ(LP2D_POINT, res.status);
-	EXPECT_NEAR(7.5, res.x1);
-	EXPECT_NEAR(12.5, res.y1);
+	EXPECT_NEAR(7.5, res.x1, 1e-4);
+	EXPECT_NEAR(12.5, res.y1, 1e-4);
 }
 
 void test_linprog2d_solve_simple_fail() {
@@ -1397,6 +1570,11 @@ int main() {
 	RUN(test_linprog2d_eliminate_constraint);
 	RUN(test_linprog2d_calculate_intersects);
 	RUN(test_linprog2d_track_min_max);
+	RUN(test_linprog2d_solve_empty);
+	RUN(test_linprog2d_solve_no_floor_single_ceil);
+	RUN(test_linprog2d_solve_single_floor_multiple_ceil1);
+	RUN(test_linprog2d_solve_single_floor_multiple_ceil2);
+	RUN(test_linprog2d_solve_single_floor_multiple_ceil3);
 	RUN(test_linprog2d_solve_vee);
 	RUN(test_linprog2d_solve_vee_offset);
 	RUN(test_linprog2d_solve_vee_offset_parallel1);
@@ -1410,16 +1588,23 @@ int main() {
 	RUN(test_linprog2d_single_floor_ceil_parallel2);
 	RUN(test_linprog2d_floor_ceil_intersect_edge1);
 	RUN(test_linprog2d_floor_ceil_intersect_edge2);
+	RUN(test_linprog2d_floor_ceil_intersect_edge2b);
 	RUN(test_linprog2d_floor_ceil_intersect_edge3);
 	RUN(test_linprog2d_floor_floor_intersect_edge);
 	RUN(test_linprog2d_vert_infeasible);
+	RUN(test_linprog2d_vert_single_floor1);
+	RUN(test_linprog2d_vert_single_floor2);
+	RUN(test_linprog2d_vert_single_floor_unbounded1);
+	RUN(test_linprog2d_vert_single_floor_unbounded2);
 	RUN(test_linprog2d_hatches);
 	RUN(test_linprog2d_nr_example);
 	RUN(test_linprog2d_barnfm10e_example);
 #ifndef LINPROG2D_NO_ALLOC
 	RUN(test_linprog2d_solve_simple_nr_example);
 	RUN(test_linprog2d_solve_simple_barnfm10e_example);
+#ifndef __EMSCRIPTEN__
 	RUN(test_linprog2d_solve_simple_fail);
+#endif
 #endif
 
 	fprintf(stderr, ANSI_GRAY "=====" ANSI_RESET "\n");
