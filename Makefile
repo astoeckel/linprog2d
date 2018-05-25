@@ -18,7 +18,9 @@
 
 CCFLAGS := -g -fPIC --std=c89 -Wall -Wextra -pedantic-errors
 
-all: build/liblinprog2d.a build/liblinprog2d.so build/test/test_linprog2d
+all: build/liblinprog2d.a build/liblinprog2d.so \
+     build/example/linprog2d_simple \
+     build/test/test_linprog2d
 
 build/linprog2d.o: linprog2d.c linprog2d.h
 	mkdir -p build
@@ -41,6 +43,10 @@ build/linprog2d.js: build/linprog2d.wasm.b64 linprog2d.in.js
 
 build/linprog2d.min.js: build/linprog2d.js
 	minify build/linprog2d.js > build/linprog2d.min.js # npm i babel-minify
+
+build/example/linprog2d_simple: build/liblinprog2d.a examples/linprog2d_simple.c
+	mkdir -p build/examples
+	$(CC) $(CCFLAGS) -static -o build/examples/linprog2d_simple examples/linprog2d_simple.c -llinprog2d -lm
 
 build/test/test_linprog2d: test/test_linprog2d.c linprog2d.c linprog2d.h
 	mkdir -p build/test
