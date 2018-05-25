@@ -15,7 +15,7 @@ The library solves a two-dimensional programming problem of the form
  minimize cx    * x + cy    * y ,
 such that Gx[i] * x + Gy[i] * y >= h[i] for all i ,
 ```
-where `cx`, `cy` are constants defining the gradient of the minimization and `Gx`, `Gy`, `h` define a set of constraints. The variables `x` and `y` are solved by the library.
+where `cx`, `cy` are constants defining the gradient of the minimization and `Gx`, `Gy`, `h` define a set of constraints. Goal is to find variables `x` and `y` which fulfill the above constraints.
 
 ### C
 
