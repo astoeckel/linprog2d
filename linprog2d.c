@@ -907,7 +907,7 @@ static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
  */
 static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
                                                    double mx) {
-	unsigned int i, j, if0;
+	unsigned int i, j, if0 = 0;
 	const double *dx = prog->dx, *y0 = prog->y0;
 	double ry0 = -HUGE_VAL;
 
@@ -1006,9 +1006,9 @@ linprog2d_t *linprog2d_init(unsigned int capacity, char *mem) {
 linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
                                    const double *Gx, const double *Gy,
                                    const double *h, unsigned int n) {
-	double x, y; /* result x, y */
+	double x = 0.0, y = 0.0; /* result x, y */
 	linprog2d_data_t *prog = (linprog2d_data_t *)prog_;
-	bool_t optimum_is_left, has_median = FALSE;
+	bool_t optimum_is_left = FALSE, has_median = FALSE;
 
 	/* Make sure the given linprog2d instance has sufficient memory to solve
 	   the problem. If not, return with an error. */
