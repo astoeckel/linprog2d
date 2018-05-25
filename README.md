@@ -95,10 +95,11 @@ emcc test/test_linprog2d.c && node ./a.out.js
 
 ## References
 
-The following references describe the algorithms used in this library in more detail. The original linear-time 2D linear-programming solver has been proposed by Nimrod Megiddo. It depends on an implementation of the median in linear-time.
+The following references describe the algorithms used in this library in more detail. The original linear-time 2D linear-programming solver has been proposed by Nimrod Megiddo. It depends on an implementation of the median in linear-time, which is relalized in the code using the "Median-of-medians" selection algorithm proposed by Blum, Floyd, Pratt Rivest, Tarjan.
 
 **Primary resources**
-* Nimrod Megiddo. Linear-Time Algorithms for Linear Programming in R³ and Related Problems. SIAM journal on computing, 1983. [PDF](http://epubs.siam.org/doi/pdf/10.1137/0212052)
+* Nimrod Megiddo. (1983). Linear-Time Algorithms for Linear Programming in R³ and Related Problems. SIAM journal on computing, [PDF](http://epubs.siam.org/doi/pdf/10.1137/0212052)
+* Blum, M.; Floyd, R. W.; Pratt, V. R.; Rivest, R. L.; Tarjan, R. E. (1973). Time bounds for selection. Journal of Computer and System Sciences. [PDF](http://people.csail.mit.edu/rivest/pubs/BFPRT73.pdf)
 
 **Secondary resources**
 * Sariel Har-Peled. Two dimensional linear programming. [Online](http://sarielhp.org/research/CG/applets/linear_prog/main.html)
