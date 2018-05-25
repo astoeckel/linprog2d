@@ -811,14 +811,14 @@ static struct linprog2d_extremum linprog2d_track_extrema(
 }
 
 #define LOC_INFEASIBLE 0
-#define LOC_UNBOUNDED 1
-#define LOC_LEFT 2
-#define LOC_RIGHT 3
-#define LOC_HERE 4
-#define LOC_HERE_EDGE 5
+#define LOC_LEFT 1
+#define LOC_RIGHT 2
+#define LOC_HERE 3
+#define LOC_HERE_EDGE 4
 
 /**
- * Determines where the optimum is w.r.t. the given median mx.
+ * Determines where the optimum is w.r.t. the given median mx. This function
+ * assumes that there is at least one floor constraint.
  */
 static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
                                     double *y) {
@@ -832,7 +832,7 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 	e_floor = linprog2d_track_extrema(mx, prog->dx, prog->y0, prog->floor,
 	                                  prog->floor_len, FALSE);
 
-	if (e_ceil.valid && e_floor.valid && e_ceil.y < e_floor.y) {
+	if (e_ceil.valid && e_ceil.y < e_floor.y) {
 		/* mx is outside the feasible region, (implicitly) evaluate
 		   d/dx f(x) - g(x) */
 		if (e_floor.min_dx > e_ceil.max_dx) {
@@ -843,33 +843,29 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 		return LOC_INFEASIBLE;
 	}
 
-	if (e_floor.valid) {
-		if (feq_(e_floor.min_dx, 0.0) && !feq_(e_floor.max_dx, 0.0)) {
-			/* Solution is an edge, but this is the right-most point. */
-			return LOC_LEFT;
-		} else if (feq_(e_floor.max_dx, 0.0) && !feq_(e_floor.min_dx, 0.0)) {
-			/* Solution is an edge, but this is the left-most point. */
-			return LOC_RIGHT;
-		} else if (feq_(e_floor.max_dx, 0.0) && feq_(e_floor.max_dx, 0.0)) {
-			/* This one is tough. The floor is horizontal, which means that the
-			   solution is an edge, but there is no intersection with another
-			   floor constraint that would allow us to progress naturally. We
-			   must compute the intersection between the horizontal floor and
-			   all other floors/ceils and return the min/max. Signal this by
-			   returning LOC_HERE_EDGE. */
-			return LOC_HERE_EDGE;
-		} else if (e_floor.min_dx < 0.0 && e_floor.max_dx > 0.0) {
-			/* Vee-shape. This is the solution */
-			*y = e_floor.y;
-			return LOC_HERE;
-		} else if (e_floor.min_dx > 0.0) {
-			return LOC_LEFT;
-		} else {
-			return LOC_RIGHT;
-		}
+	if (feq_(e_floor.min_dx, 0.0) && !feq_(e_floor.max_dx, 0.0)) {
+		/* Solution is an edge, but this is the right-most point. */
+		return LOC_LEFT;
+	} else if (feq_(e_floor.max_dx, 0.0) && !feq_(e_floor.min_dx, 0.0)) {
+		/* Solution is an edge, but this is the left-most point. */
+		return LOC_RIGHT;
+	} else if (feq_(e_floor.max_dx, 0.0) && feq_(e_floor.min_dx, 0.0)) {
+		/* This one is tough. The floor is horizontal, which means that the
+		   solution is an edge, but there is no intersection with another
+		   floor constraint that would allow us to progress naturally. We
+		   must compute the intersection between the horizontal floor and
+		   all other floors/ceils and return the min/max. Signal this by
+		   returning LOC_HERE_EDGE. */
+		return LOC_HERE_EDGE;
+	} else if (e_floor.min_dx < 0.0 && e_floor.max_dx > 0.0) {
+		/* Vee-shape. This is the solution */
+		*y = e_floor.y;
+		return LOC_HERE;
+	} else if (e_floor.min_dx > 0.0) {
+		return LOC_LEFT;
+	} else {
+		return LOC_RIGHT;
 	}
-
-	return LOC_UNBOUNDED; /* no floor constraint; problem is not bounded */
 }
 
 /**
