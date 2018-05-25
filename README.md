@@ -1,6 +1,6 @@
 # linprog2d -- Linear Programming Solver for Two Dimensional Problems
 
-`liblinprog2d` is a small library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). It comes with bindings for Python and a JavaScript/WebAssembly version.
+`liblinprog2d` is a small library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). It comes with bindings for JavaScript/WebAssembly version.
 
 The library is written in pure C89/C90 and has very little dependencies aside from `sqrt` and `malloc`, `free` (the latter can be deactivated).
 
