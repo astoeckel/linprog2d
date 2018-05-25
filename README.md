@@ -4,18 +4,18 @@
 
 The library can also be compiled to JavaScript/WebAssembly.
 
-**[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
+**[Launch interactive visualization](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
-The library is written in pure C89/C90 and has very little dependencies aside from `sqrt` and `malloc`, `free` (the latter dependency can be deactivated by defining `LINPROG2D_NO_ALLOC`).
+The library is written in pure C89/C90 and has no dependencies aside from the standard-library functions `sqrt()`, `fabs()`, `malloc()`, and `free()` (heap allocations can be deactivated by defining `LINPROG2D_NO_ALLOC`).
 
 ## How to use
 
 The library solves a two-dimensional programming problem of the form
 ```
- minimize cx * x + cy * y ,
+ minimize cx    * x + cy    * y ,
 such that Gx[i] * x + Gy[i] * y >= h[i] for all i ,
 ```
-where `cx`, `cy` are constants defining the gradient of the minimization and `Gx`, `Gy`, `h` define a set of constraints.
+where `cx`, `cy` are constants defining the gradient of the minimization and `Gx`, `Gy`, `h` define a set of constraints. The variables `x` and `y` are solved by the library.
 
 ### C
 
@@ -56,17 +56,17 @@ int main() {
 }
 ```
 
-For more information on how to use the library, especially the heap-allocation free version of the library, consult `linprog2d.h` the header.
+For more information on how to use the library, especially the heap-allocation free version of the library, consult the documentation in the header `linprog2d.h`.
 
 ### JavaScript
 
 The following code solves the same problem as the C code above, but uses the JavaScript/WebAssembly library located in the `dist` directoy of this repository (or build it yourself, see below):
-```
+```javascript
 linprog2d.init().then((solve) => {
 	const Gx = [1.0, 0.0,  -1.0,   -8.0,   -4.0];
 	const Gy = [0.0, 1.0,   0.0,   -8.0,  -12.0];
 	const h  = [0.0, 0.0, -15.0, -160.0, -180.0];
-	const res = solve(-5.0, -10.0, Gx, Gy, h)
+	const res = solve(-5.0, -10.0, Gx, Gy, h);
 	if (res.status == linprog2d.POINT) {
 		console.log('x =', res.x1, ' y = ', res.y1);
 	}
