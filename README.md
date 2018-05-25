@@ -1,8 +1,6 @@
 # linprog2d ‒ Linear Programming Solver for 2D Problems
 
-`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints) using Megiddo's algorithm.
-
-The library can also be compiled to JavaScript/WebAssembly.
+`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). It can be compiled to JavaScript/WebAssembly for use in web applications (4.9kiB gzipped).
 
 **[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
