@@ -59,7 +59,7 @@ static double hypot_(double x, double y) { return sqrt(x * x + y * y); }
 #define MAX_EPS_ABS 1e-30 /* maximum absolute difference */
 #define MAX_EPS_REL 1e-15 /* maximum relative difference */
 
-bool_t feq_(double x, double y) {
+static bool_t feq_(double x, double y) {
 	const double dlt = fabs(x - y);
 	return (dlt < MAX_EPS_ABS) || (dlt < MAX_EPS_REL * fmax_(fabs(x), fabs(y)));
 }
