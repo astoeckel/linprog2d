@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<!--
+ *  linprog2d --- Two-dimensional linear programming solver
+ *  Copyright (C) 2018 Andreas Stöckel
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Linprog2D HTML Example</title>
+	<style type="text/css">
+		html, body {
+			width: 100%;
+			height: 100%;
+			padding: 0;
+			margin: 0;
+			font-family: sans-serif;
+		}
+
+		.wrapper {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+		}
+
+		p#msg {
+			font-weight: bold;
+		}
+
+		header {
+			padding: 0 1rem 1rem 1rem;
+		}
+
+		svg {
+			width: 100%;
+			height: 100%;
+			background-color: #efefef;
+			cursor: crosshair;
+		}
+
+		svg line {
+			stroke-width: 2.0;
+		}
+		
+		svg line.prototype {
+			stroke: black;
+			stroke-dasharray: 5 5;
+			stroke-width: 1.0;
+		}
+
+		svg line.vert {
+			stroke: blue;
+		}
+
+		svg line.ceil {
+			stroke: red;
+		}
+
+		svg line.floor {
+			stroke: green;
+		}
+
+		svg line.solution {
+			stroke: black;
+		}
+
+		svg polygon {
+			opacity: 0.25;
+		}
+
+		svg polygon.vert {
+			fill: #000099;
+		}
+
+		svg polygon.ceil {
+			fill: #990000;
+		}
+
+		svg polygon.floor {
+			fill: #009900;
+		}
+
+		svg circle {
+			fill: black;
+		}
+	</style>
+	<script type="text/javascript" src="../dist/linprog2d.min.js"></script>
+</head>
+<body>
+	<div class="wrapper">
+		<header>
+			<h1>Linprog2D JavaScript Example</h1>
+			<p><strong>Instructions:</strong> Click three times on the surface below to place a constraint: two times to determine the start and end point, and a third time to specify the feasible region. The <em>infeasible</em> region is shaded. Hold shift to snap angles.</p>
+			<p>Click "Solve" to compute point with the minimum feasible <i>y</i>-coordinate.</p>
+			<p id="msg">&nbsp;</p>
+			<button id="btn_solve">Solve</button><button id="btn_reset">Reset</button><button id="btn_undo">Undo</button>
+		</header>
+		<svg id="surface"></svg>
+	</div>
+	<script type="text/javascript">
+'use strict';
+/******************************************************************************
+ * linprog2d usage example                                                    *
+ ******************************************************************************/
+
+let Gx = [], Gy = [], h = [];
+let solution = null;
+
+function solve() {
+	linprog2d.init().then(function(solve) {
+		/* Solve the problem. y-axis is displayed inverted, so maximize y instead
+		   of minimising. */
+		solution = solve(0, -1, Gx, Gy, h);
+		console.log(solution);
+
+		/* Print a message */
+		let p_msg = document.getElementById('msg');
+		switch (solution.status) {
+			case linprog2d.ERROR:
+				p_msg.innerText = 'Error while solving. This should not happen.';
+			case linprog2d.INFEASIBLE:
+				p_msg.innerText = 'No solution. Problem is infeasible.';
+				break;
+			case linprog2d.UNBOUNDED:
+				p_msg.innerText = 'No solution. Problem is unbounded.';
+				break;
+			case linprog2d.EDGE:
+				p_msg.innerText = 'Solution is on an edge.';
+				break;
+			case linprog2d.POINT:
+				p_msg.innerText = 'Solution is a single point.';
+				break;
+		}
+
+		/* Point the solution */
+		repaint();
+	});
+}
+
+/******************************************************************************
+ * GUI Code (very quick and dirty)                                            *
+ ******************************************************************************/
+
+const STATE_NONE = 0;
+const STATE_PLACE_LINE_ENDPOINT = 1;
+const STATE_PLACE_DIR = 2;
+
+const VERT = 'vert';
+const CEIL = 'ceil';
+const FLOOR = 'floor';
+
+let aux_line = null;
+let state = STATE_NONE;
+let x0, y0, x1, y1;
+
+const btn_solve = document.getElementById("btn_solve");
+const btn_reset = document.getElementById("btn_reset");
+const btn_undo = document.getElementById("btn_undo");
+const svg_surface = document.getElementById("surface");
+
+function reset() {
+	Gx = [], Gy = [], h = [];
+	state = STATE_NONE;
+	solution = null;
+	repaint();
+}
+reset();
+
+function undo() {
+	let n = Gx.length;
+	if (n > 0) {
+		Gx = Gx.slice(0, n - 1);
+		Gy = Gy.slice(0, n - 1);
+		h = h.slice(0, n - 1);
+	}
+	state = STATE_NONE;
+	solution = null;
+	repaint();
+}
+
+function repaint() {
+	while (svg_surface.firstChild) {
+		svg_surface.removeChild(svg_surface.firstChild);
+	}
+
+	let r = svg_surface.getBoundingClientRect();
+	let w_ = r.width, h_ = r.height;
+	let s = 1.0 / Math.max(w_, h_);
+	let ox = w_ / 2.0, oy =  h_ / 2.0;
+	let n = Gx.length;
+
+	let bx0 = -ox * s, bx1 = ox * s;
+	let by0 = -oy * s, by1 = oy * s;
+
+	let lines = []; /* Draw lines over everything else */
+
+	for (let i = 0; i < n; i++) {
+		/* Determine the type of the constraint */
+		let type;
+		if (Gy[i] == 0.0) {
+			type = VERT;
+		} else if (Gy[i] > 0.0) {
+			type = CEIL;
+		} else {
+			type = FLOOR;
+		}
+
+		/* Compute the extent of the constraint on the surface */
+		let lx0, ly0, lx1, ly1;
+		if (type == VERT) {
+			lx0 = h[i] / Gx[i];
+			ly0 = by0;
+			lx1 = h[i] / Gx[i];
+			ly1 = by1;
+		} else {
+			lx0 = bx0;
+			ly0 = (h[i] - Gx[i] * bx0) / Gy[i];
+			lx1 = bx1;
+			ly1 = (h[i] - Gx[i] * bx1) / Gy[i];
+		}
+
+		/* Draw the constraint boundary */
+		let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		line.setAttribute('class', type);
+
+		let sx0 = lx0 / s + ox, sy0 = ly0 / s + oy;
+		let sx1 = lx1 / s + ox, sy1 = ly1 / s + oy;
+		line.setAttribute('x1', sx0);
+		line.setAttribute('y1', sy0);
+		line.setAttribute('x2', sx1);
+		line.setAttribute('y2', sy1);
+		lines.push(line);
+
+		/* Draw the infeasible area */
+		let polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+		polygon.setAttribute('class', type);
+		if (type == VERT) {
+			if (Gx[i] > 0.0) {
+				polygon.setAttribute('points', `${sx0},${sy0} 0,0 0,${h_} ${sx1},${sy1}`);
+			} else {
+				polygon.setAttribute('points', `${sx0},${sy0} ${w_},0 ${w_},${h_} ${sx1},${sy1}`);
+			}
+		} else {
+			let dir = (type == CEIL) ? 1.0 : -1.0;
+			if (dir > 0.0) {
+				polygon.setAttribute('points', `${sx0},${sy0} 0,0 ${w_},0 ${sx1},${sy1}`);
+			} else {
+				polygon.setAttribute('points', `${sx0},${sy0} 0,${h_} ${w_},${h_} ${sx1},${sy1}`);
+			}
+		}
+
+		svg_surface.appendChild(polygon);
+	}
+
+	/* Append all lines on top */
+	for (let line of lines) {
+		svg_surface.appendChild(line);
+	}
+
+	/* Draw the solution, if there currently is one */
+	if (solution) {
+		if (solution.status >= linprog2d.EDGE) {
+			let circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			circ.setAttribute('r', 5);
+			circ.setAttribute('cx', solution.x1 / s + ox);
+			circ.setAttribute('cy', solution.y1 / s + oy);
+			svg_surface.appendChild(circ);
+		}
+		if (solution.status == linprog2d.EDGE) {
+			let circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			circ.setAttribute('r', 5);
+			circ.setAttribute('cx', solution.x2 / s + ox);
+			circ.setAttribute('cy', solution.y2 / s + oy);
+			svg_surface.appendChild(circ);
+
+			let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			line.setAttribute('class', 'solution');
+			line.setAttribute('x1', solution.x1 / s + ox);
+			line.setAttribute('y1', solution.y1 / s + oy);
+			line.setAttribute('x2', solution.x2 / s + ox);
+			line.setAttribute('y2', solution.y2 / s + oy);
+			svg_surface.appendChild(line);
+		}
+	}
+
+	/* If we're currently adding a new constraint, add that line as well */
+	if (aux_line) {
+		svg_surface.appendChild(aux_line);
+	}
+}
+
+function cut(x) {
+	return Math.round(x * 10000) / 10000;
+}
+
+function client_to_viewport(e) {
+	const r = svg_surface.getBoundingClientRect();
+	return [(e.clientX - r.left),
+	        (e.clientY - r.top)];
+}
+
+function snap_to_angle(x0, y0, x, y) {
+	let dx = x - x0, dy = y - y0;
+	let angle = Math.atan2(dy, dx);
+	let len = Math.sqrt(dx * dx + dy * dy);
+	let angle_snapped = Math.round(angle / (Math.PI * 0.125)) * (Math.PI * 0.125);
+	return [x0 + Math.cos(angle_snapped) * len, y0 + Math.sin(angle_snapped) * len];
+}
+
+function surface_click(e) {
+	let [x, y] = client_to_viewport(e);
+	switch (state) {
+		case STATE_NONE:
+			state = STATE_PLACE_LINE_ENDPOINT;
+			x0 = x, y0 = y, x1 = x, y1 = y;
+			aux_line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			aux_line.setAttribute('class', 'prototype');
+			aux_line.setAttribute('x1', x);
+			aux_line.setAttribute('y1', y);
+			aux_line.setAttribute('x2', x);
+			aux_line.setAttribute('y2', y);
+			svg_surface.appendChild(aux_line);
+			break;
+		case STATE_PLACE_LINE_ENDPOINT:
+			if (e.shiftKey) {
+				[x, y] = snap_to_angle(x0, y0, x, y);
+			}
+
+			svg_surface.removeChild(aux_line);
+			aux_line = null;
+
+			let r = svg_surface.getBoundingClientRect();
+			let s = 1.0 / Math.max(r.width, r.height);
+
+			x0 = (x0 - r.width / 2.0) * s;
+			y0 = (y0 - r.height / 2.0) * s;
+			x1 = (x - r.width / 2.0) * s;
+			y1 = (y - r.height / 2.0) * s;
+
+			let Gx_ = cut((y1 - y0));
+			let Gy_ = cut(-(x1 - x0));
+			let h_ = cut(Gx_ * x0 + Gy_ * y0);
+
+			if (Gx_ != 0.0 || Gy_ != 0.0) {
+				Gx.push(Gx_);
+				Gy.push(Gy_);
+				h.push(h_);
+				repaint();
+				state = STATE_PLACE_DIR;
+				surface_mouse_move(e); /* Update direction */
+				repaint();
+			} else {
+				state = STATE_NONE;
+			}
+			break;
+		case STATE_PLACE_DIR:
+			state = STATE_NONE;
+			break;
+	}
+}
+
+function surface_mouse_move(e) {
+	let [x, y] = client_to_viewport(e);
+	switch (state) {
+		case STATE_PLACE_LINE_ENDPOINT:
+			if (e.shiftKey) {
+				[x, y] = snap_to_angle(x0, y0, x, y);
+			}
+			aux_line.setAttribute('x2', x);
+			aux_line.setAttribute('y2', y);
+			break;
+		case STATE_PLACE_DIR:
+			let r = svg_surface.getBoundingClientRect();
+			let s = 1.0 / Math.max(r.width, r.height);
+			let vx = (x - r.width / 2.0) * s;
+			let vy = (y - r.height / 2.0) * s;
+
+			let i = Gx.length - 1;
+			let valid = Gx[i] * vx + Gy[i] * vy >= h[i];
+			if (!valid) {
+				Gx[i] *= -1.0;
+				Gy[i] *= -1.0;
+				h[i] *= -1.0;
+				repaint();
+			}
+			break;
+	}
+}
+
+function surface_key_press(e) {
+	if (e.keyCode == 27 || e.key == 'Escape') {
+		if (state == STATE_PLACE_DIR) {
+			undo();
+		} else {
+			state = STATE_NONE;
+			aux_line = null;
+		}
+		repaint();
+	}
+}
+
+/* Register event listeners */
+btn_solve.addEventListener('click', solve);
+btn_reset.addEventListener('click', reset);
+btn_undo.addEventListener('click', undo);
+svg_surface.addEventListener('click', surface_click);
+svg_surface.addEventListener('mousemove', surface_mouse_move);
+window.addEventListener('keypress', surface_key_press);
+window.addEventListener('resize', repaint);
+	</script>
+</body>
+</html>
