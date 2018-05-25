@@ -1,10 +1,10 @@
 # linprog2d ‒ Linear Programming Solver for 2D Problems
 
-`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). It can be compiled to JavaScript/WebAssembly for use in web applications (4.9kiB gzipped).
+`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). The library can be compiled to JavaScript/WebAssembly and embedded in web applications (4.9kiB gzipped).
 
 **[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
-The library is written in pure C89/C90 and has no dependencies aside from the standard-library functions `sqrt()`, `fabs()`, `malloc()`, and `free()` (heap allocations can be deactivated by defining `LINPROG2D_NO_ALLOC`).
+The code is written in pure C89/C90 and has no dependencies aside from the standard-library functions `sqrt()`, `fabs()`, `malloc()`, and `free()` (heap allocations can be deactivated by defining `LINPROG2D_NO_ALLOC`). To prevent numerical instabilities, the code conditions the input problem (shifts the coordinate system, normalises the constraints) before solving. The library comes with an extensive test-suite (100% line coverage).
 
 ## How to use
 
