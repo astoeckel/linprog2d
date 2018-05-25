@@ -984,7 +984,7 @@ static linprog2d_result_t linprog2d_calculate_result(linprog2d_data_t *prog) {
 		if (x0 <= -HUGE_VAL) {
 			return linprog2d_result_unbounded();
 		}
-		return linprog2d_result_point(&(prog->R), &(prog->o), x0, ry1);
+		return linprog2d_result_point(&(prog->R), &(prog->o), x0, ry0);
 	} else /* if (dx[if0] < 0.0) */ { /* Minimum is on the right */
 		if (x1 >= HUGE_VAL) {
 			return linprog2d_result_unbounded();
