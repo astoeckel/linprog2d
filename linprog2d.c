@@ -907,7 +907,7 @@ static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
  */
 static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
                                                    double mx) {
-	unsigned int i, if0;
+	unsigned int i, j, if0;
 	const double *dx = prog->dx, *y0 = prog->y0;
 	double ry0 = -HUGE_VAL;
 
@@ -915,9 +915,10 @@ static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
 	   top-most horizontal floor constraint at mx. This function will only be
 	   called if such a constraint exists. */
 	for (i = 0; i < prog->floor_len; i++) {
-		if (feq_(dx[i], 0.0) && y0[i] > ry0) {
-			ry0 = y0[i];
-			if0 = i;
+		j = prog->floor[i];
+		if (feq_(dx[j], 0.0) && y0[j] > ry0) {
+			ry0 = y0[j];
+			if0 = j;
 		}
 	}
 
