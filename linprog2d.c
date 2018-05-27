@@ -932,9 +932,14 @@ static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
 	linprog2d_calculate_edge_intersections(prog, prog->floor, prog->floor_len,
 	                                       if0, mx, FALSE);
 
-	/* Return the actual edge */
-	return linprog2d_result_edge(&(prog->R), &(prog->o), prog->x0, ry0,
-	                             prog->x1, ry0);
+	/* Check whether the result is just a point on the edge */
+	if (feq_(prog->x0, prog->x1)) {
+		return linprog2d_result_point(&(prog->R), &(prog->o), prog->x0, ry0);
+	} else {
+		/* Return the actual edge */
+		return linprog2d_result_edge(&(prog->R), &(prog->o), prog->x0, ry0,
+		                             prog->x1, ry0);
+	}
 }
 
 /**

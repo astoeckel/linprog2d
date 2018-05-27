@@ -1238,6 +1238,19 @@ void test_linprog2d_single_floor_ceil_parallel4() {
 	EXPECT_NEAR(0.0, res.y2, 1e-4);
 }
 
+void test_linprog2d_single_floor_ceil_edge_single_point() {
+	double Gx_src[3U] = {-1.0, 1.0, 0.0};
+	double Gy_src[3U] = {-1.0, -1.0, 1.0};
+	double h_src[3U] = {1.0, 1.0, -1.0};
+
+	MKPROG(3U)
+
+	res = linprog2d_solve(&prog, 0.0, 1.0, Gx_src, Gy_src, h_src, 3U);
+	EXPECT_EQ(LP2D_POINT, res.status);
+	EXPECT_NEAR(0.0, res.x1, 1e-4);
+	EXPECT_NEAR(-1.0, res.y1, 1e-4);
+}
+
 void test_linprog2d_floor_ceil_intersect_edge1() {
 	/* Result is on a line.
 
@@ -1618,6 +1631,7 @@ int main() {
 	RUN(test_linprog2d_single_floor_ceil_parallel2);
 	RUN(test_linprog2d_single_floor_ceil_parallel3);
 	RUN(test_linprog2d_single_floor_ceil_parallel4);
+	RUN(test_linprog2d_single_floor_ceil_edge_single_point);
 	RUN(test_linprog2d_floor_ceil_intersect_edge1);
 	RUN(test_linprog2d_floor_ceil_intersect_edge2);
 	RUN(test_linprog2d_floor_ceil_intersect_edge2b);
