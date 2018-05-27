@@ -876,7 +876,7 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
                                                    const unsigned int *idcs,
                                                    unsigned int idcs_len,
-                                                   unsigned int if0, double mx,
+                                                   unsigned int if0,
                                                    bool_t is_ceil) {
 	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h, *dx = prog->dx;
 	double rx1, ry1;
@@ -907,8 +907,7 @@ static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
  * We know that mx is optimal, but it is part of an entire edge. This function
  * computes the beginning and end of the edge and returns it.
  */
-static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
-                                                   double mx) {
+static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog) {
 	unsigned int i, j, if0 = 0;
 	const double *dx = prog->dx, *y0 = prog->y0;
 	double ry0 = -HUGE_VAL;
@@ -927,9 +926,9 @@ static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
 	/* Calculate all intersections between if0 and the ceil/floor constraints,
 	   update prog->x0, prog->x1 accordingly */
 	linprog2d_calculate_edge_intersections(prog, prog->ceil, prog->ceil_len,
-	                                       if0, mx, TRUE);
+	                                       if0, TRUE);
 	linprog2d_calculate_edge_intersections(prog, prog->floor, prog->floor_len,
-	                                       if0, mx, FALSE);
+	                                       if0, FALSE);
 
 	/* Check whether the result is just a point on the edge */
 	if (feq_(prog->x0, prog->x1)) {
@@ -1080,7 +1079,7 @@ linprog2d_result_t linprog2d_solve(linprog2d_t *prog_, double cx, double cy,
 			case LOC_HERE:
 				return linprog2d_result_point(&prog->R, &prog->o, x, y);
 			case LOC_HERE_EDGE:
-				return linprog2d_calculate_edge(prog, x);
+				return linprog2d_calculate_edge(prog);
 		}
 	}
 
