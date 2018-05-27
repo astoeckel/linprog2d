@@ -2,4 +2,9 @@ language: C
 compiler:
   - clang
   - gcc
+before_install:
+  - pip install --user gcovr cpp-coveralls
 script: make test
+after_success:
+  make cov
+  coveralls --exclude test
