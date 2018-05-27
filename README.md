@@ -35,7 +35,6 @@ The following C code demonstrates how to use `linprog2d` to solve a simple probl
 #include <stdio.h>
 
 int main() {
-	/* Input arrays */
 	const double Gx[5U] = {1.0, 0.0, -1.0, -8.0, -4.0};
 	const double Gy[5U] = {0.0, 1.0, 0.0, -8.0, -12.0};
 	const double h[5U] = {0.0, 0.0, -15.0, -160.0, -180.0};
@@ -45,7 +44,6 @@ int main() {
 	linprog2d_result_t res =
 	    linprog2d_solve_simple(cx, cy, Gx, Gy, h, 5U);
 
-	/* Print the solution */
 	if (res.status == LP2D_POINT) {
 		printf("x=%0.2f y=%0.2f\n", res.x1, res.y1);
 		return 0;
