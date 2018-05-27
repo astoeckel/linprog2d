@@ -920,13 +920,13 @@ void test_linprog2d_track_min_max() {
 	prog.capacity = C;                                                    \
 	prog.tmp = tmp;
 
-void test_linprog2d_solve_empty() {
+void test_linprog2d_empty() {
 	MKPROG(1U)
 	res = linprog2d_solve(&prog, 0.0, 1.0, NULL, NULL, NULL, 0U);
 	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
 }
 
-void test_linprog2d_solve_no_floor_single_ceil() {
+void test_linprog2d_no_floor_single_ceil() {
 	double Gx_src[1] = {1.0};
 	double Gy_src[1] = {-1.0};
 	double h_src[1] = {0.0};
@@ -937,7 +937,7 @@ void test_linprog2d_solve_no_floor_single_ceil() {
 	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
 }
 
-void test_linprog2d_solve_single_floor_multiple_ceil1() {
+void test_linprog2d_single_floor_multiple_ceil1() {
 	double Gx_src[5] = {1.0, 1.0, -1.0, 1.0, 2.0};
 	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
 	double h_src[5] = {0.0, 3.0, -4.0, 1.0, 3.0};
@@ -948,7 +948,7 @@ void test_linprog2d_solve_single_floor_multiple_ceil1() {
 	EXPECT_EQ(LP2D_UNBOUNDED, res.status);
 }
 
-void test_linprog2d_solve_single_floor_multiple_ceil2() {
+void test_linprog2d_single_floor_multiple_ceil2() {
 	double Gx_src[5] = {1.0, -1.0, -1.0, 1.0, 2.0};
 	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
 	double h_src[5] = {0.0, 3.0, -4.0, 1.0, 3.0};
@@ -959,7 +959,7 @@ void test_linprog2d_solve_single_floor_multiple_ceil2() {
 	EXPECT_EQ(LP2D_INFEASIBLE, res.status);
 }
 
-void test_linprog2d_solve_single_floor_multiple_ceil3() {
+void test_linprog2d_single_floor_multiple_ceil3() {
 	double Gx_src[5] = {1.0, -1.0, -1.0, 1.0, 2.0};
 	double Gy_src[5] = {-1.0, 1.0, -2.0, -3.0, -0.5};
 	double h_src[5] = {-10.0, -10.0, 20.0, 0.0, 3.0};
@@ -973,7 +973,7 @@ void test_linprog2d_solve_single_floor_multiple_ceil3() {
 }
 
 
-void test_linprog2d_solve_vee() {
+void test_linprog2d_vee() {
 	/* Result has its minimum at (0, 0)
 
 	    \xxxx^xxxx/
@@ -998,7 +998,7 @@ void test_linprog2d_solve_vee() {
 	EXPECT_EQ(0.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset() {
+void test_linprog2d_vee_offset() {
 	/* Result has its minimum at (1, 2)
 
 	    \x^xxxxxxx/
@@ -1023,7 +1023,7 @@ void test_linprog2d_solve_vee_offset() {
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel1() {
+void test_linprog2d_vee_offset_parallel1() {
 	/* Result has its minimum at (1, 2)
 
 	 \  \x^xxxxxxx/  /
@@ -1048,7 +1048,7 @@ void test_linprog2d_solve_vee_offset_parallel1() {
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel2() {
+void test_linprog2d_vee_offset_parallel2() {
 	double Gx_src[4] = {1.0, -1.0, -1.0, 1.0};
 	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
 	double h_src[4] = {3.0, 1.0, -1.0, 0.0};
@@ -1061,7 +1061,7 @@ void test_linprog2d_solve_vee_offset_parallel2() {
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel3() {
+void test_linprog2d_vee_offset_parallel3() {
 	double Gx_src[4] = {1.0, -1.0, 1.0, -1.0};
 	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
 	double h_src[4] = {3.0, 1.0, 0.0, -1.0};
@@ -1074,7 +1074,7 @@ void test_linprog2d_solve_vee_offset_parallel3() {
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_parallel4() {
+void test_linprog2d_vee_offset_parallel4() {
 	double Gx_src[4] = {1.0, 1.0, -1.0, -1.0};
 	double Gy_src[4] = {1.0, 1.0, 1.0, 1.0};
 	double h_src[4] = {3.0, 0.0, 1.0, -1.0};
@@ -1087,7 +1087,7 @@ void test_linprog2d_solve_vee_offset_parallel4() {
 	EXPECT_EQ(2.0, res.y1);
 }
 
-void test_linprog2d_solve_vee_offset_rotated() {
+void test_linprog2d_vee_offset_rotated() {
 	/* Result has its minimum at (1, 2)
 
 	xxxx\ ^       /
@@ -1613,18 +1613,18 @@ int main() {
 	RUN(test_linprog2d_eliminate_constraint);
 	RUN(test_linprog2d_calculate_intersects);
 	RUN(test_linprog2d_track_min_max);
-	RUN(test_linprog2d_solve_empty);
-	RUN(test_linprog2d_solve_no_floor_single_ceil);
-	RUN(test_linprog2d_solve_single_floor_multiple_ceil1);
-	RUN(test_linprog2d_solve_single_floor_multiple_ceil2);
-	RUN(test_linprog2d_solve_single_floor_multiple_ceil3);
-	RUN(test_linprog2d_solve_vee);
-	RUN(test_linprog2d_solve_vee_offset);
-	RUN(test_linprog2d_solve_vee_offset_parallel1);
-	RUN(test_linprog2d_solve_vee_offset_parallel2);
-	RUN(test_linprog2d_solve_vee_offset_parallel3);
-	RUN(test_linprog2d_solve_vee_offset_parallel4);
-	RUN(test_linprog2d_solve_vee_offset_rotated);
+	RUN(test_linprog2d_empty);
+	RUN(test_linprog2d_no_floor_single_ceil);
+	RUN(test_linprog2d_single_floor_multiple_ceil1);
+	RUN(test_linprog2d_single_floor_multiple_ceil2);
+	RUN(test_linprog2d_single_floor_multiple_ceil3);
+	RUN(test_linprog2d_vee);
+	RUN(test_linprog2d_vee_offset);
+	RUN(test_linprog2d_vee_offset_parallel1);
+	RUN(test_linprog2d_vee_offset_parallel2);
+	RUN(test_linprog2d_vee_offset_parallel3);
+	RUN(test_linprog2d_vee_offset_parallel4);
+	RUN(test_linprog2d_vee_offset_rotated);
 	RUN(test_linprog2d_single_floor_horz_unbounded);
 	RUN(test_linprog2d_single_floor_horz_edge);
 	RUN(test_linprog2d_single_floor_ceil_parallel1);
