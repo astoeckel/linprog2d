@@ -69,7 +69,8 @@ this.linprog2d = (function(global) {
 	let _init = null;
 
 	/**
-	 * Loads and initialises the WASM module.
+	 * Loads and initialises the WASM module. Returns a promise which, for
+	 * convenience, provides a reference at the solve() function.
 	 */
 	function init() {
 		if (!_init) {
@@ -106,14 +107,14 @@ this.linprog2d = (function(global) {
 	}
 
 	/**
-	 * Solves a 2D linear programming problem. This problem is of the form
+	 * Solves a 2D linear programming problem of the form
 	 *
 	 * minimize c.x * x + c.y * y
 	 * w.r.t.   Gx[i] * x + Gy[i] * y >= h[i] for all i
 	 *
 	 * where cx, cy are doubles and Gx, Gy, h are double arrays of the same
-	 * length. This function returns an object containing the following data as
-	 * a promise.
+	 * length. This function must only be called after init() has completed.
+	 * This function returns an object containing the following data
 	 * {
 	 *     'status': <one of the LP2D_* constants defined below>,
 	 *     'x1': <solution point x-coordinate>,
@@ -121,8 +122,6 @@ this.linprog2d = (function(global) {
 	 *     'x2': <solution second edge point x-coordinate>,
 	 *     'y2': <solution second edge point y-coordinate>
 	 * }
-	 *
-	 * Note that this function is not reentrant, 
 	 */
 	function solve(cx, cy, Gx, Gy, h) {
 		/* Make sure the input is valid */

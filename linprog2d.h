@@ -53,7 +53,7 @@ enum linprog2d_status {
 
 	/**
 	 * There is no solution to this problem, i.e. the solution space is empty.
-	 * This may happen if there are constraints that contradict each other.
+	 * This happens if there are constraints that contradict each other.
 	 */
 	LP2D_INFEASIBLE = 1,
 
@@ -75,13 +75,13 @@ enum linprog2d_status {
 };
 
 /**
- * Result of the linear programming algorithm.
+ * Structure describing the result of the linear programming algorithm.
  */
 struct linprog2d_result {
 	/**
 	 * The result is encoded as two points. If the optimum is a single point,
-	 * this point is stored as (x1, y1). Otherwise, if the optimum is a line or
-	 * a ray, the result is encoded in the pair (x1, y1), (x2, y2). Also see the
+	 * this point is stored as (x1, y1). Otherwise, if the optimum lies on an
+	 * edge, the result is encoded in the pair (x1, y1), (x2, y2). Also see the
 	 * documentation for linprog2d_result_type for more details.
 	 */
 	double x1, y1, x2, y2;
@@ -166,8 +166,8 @@ unsigned int LP2D_EXPORT linprog2d_capacity(const linprog2d_t *prog);
  * linprog2d_solve, and linprog2d_free. Solves a two-dimensional linear
  * programming problem of the form.
  *
- * minimize cx * x + cy * y
- *   w.r.t. Gx[i] * x + Gy[i] * y >= h[i] for all 0 <= i < n
+ * minimize c.x * x + c.y * y
+ * w.r.t.   Gx[i] * x + Gy[i] * y >= h[i] for all i
  *
  * The result is encoded in the returned linprog2d_result structure.
  */

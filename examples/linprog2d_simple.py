@@ -29,5 +29,5 @@ Gx = [1.0, 0.0,  -1.0,   -8.0,   -4.0];
 Gy = [0.0, 1.0,   0.0,   -8.0,  -12.0];
 h  = [0.0, 0.0, -15.0, -160.0, -180.0];
 res = linprog2d.solve(-5.0, -10.0, Gx, Gy, h)
-if res.status == linprog2d.STATUS_POINT:
+if res.status == linprog2d.POINT:
     print("x =", res.x1, "y =", res.y1)

@@ -24,13 +24,13 @@ foreign function interface.
 import ctypes
 import numpy as np
 
-linprog2d_solve_simple = None
+_linprog2d_solve_simple = None
 
-def init():
-    global linprog2d_solve_simple
+def _init():
+    global _linprog2d_solve_simple
 
     # Abort if the library has already been loaded
-    if not linprog2d_solve_simple is None:
+    if not _linprog2d_solve_simple is None:
         return
 
     # Import linprog2d_solve_simple using the foreign function interface
@@ -51,7 +51,7 @@ def init():
     c_linprog2d_result_p = POINTER(linprog2d_result)
 
     # Define a wrapper function
-    def linprog2d_solve_simple_(cx, cy, Gx, Gy, h):
+    def linprog2d_solve_simple_wrapper(cx, cy, Gx, Gy, h):
         result = linprog2d_result(1.0, 2.0, 3.0, 4.0, 5)
         c_linprog2d_solve_simple(
             c_linprog2d_result_p(result),
@@ -63,7 +63,7 @@ def init():
         return result
 
     # Store the wrapper in the global variable
-    linprog2d_solve_simple = linprog2d_solve_simple_
+    _linprog2d_solve_simple = linprog2d_solve_simple_wrapper
 
 def solve(cx, cy, Gx, Gy, h):
     """
@@ -79,10 +79,24 @@ def solve(cx, cy, Gx, Gy, h):
     Gy: is an n-element vector containing the y-components of the constraint
         normal vectors, where n is the number of constraints.
     h: is an n-element vector containing the offsets of the constraint vectors.
+
+    Return
+    ======
+
+    A linprog2d_result structure containing the following fields:
+
+    x1, y1, x2, y2:
+       The result is encoded as two points. If the optimum is a single point,
+       this point is stored as (x1, y1). Otherwise, if the optimum lies on an
+       edge, the result is encoded in the pair (x1, y1), (x2, y2).
+
+    status:
+        One of ERROR, INFEASIBLE, UNBOUNDED, EDGE, POINT. See the description of
+        these numeric constants for more information.
     """
 
     # Load the library
-    init()
+    _init()
 
     # Convert the incoming parameters to numpy arrays of the correct layout
     Gx = np.atleast_1d(Gx).astype(np.float64, order='C', copy=False)
@@ -93,12 +107,35 @@ def solve(cx, cy, Gx, Gy, h):
     assert (Gx.size == Gy.size == h.size)
 
     # Call linprog2d_solve_simple
-    return linprog2d_solve_simple(cx, cy, Gx, Gy, h)
+    return _linprog2d_solve_simple(cx, cy, Gx, Gy, h)
 
 # Status codes
-STATUS_ERROR = 0
-STATUS_INFEASIBLE = 1
-STATUS_UNBOUNDED = 2
-STATUS_EDGE = 3
-STATUS_POINT = 4
+
+"""
+linprog2d failed to allocate memory to solve the problem or the gradient is
+zero.
+"""
+ERROR = 0
+
+"""
+There is no solution to this problem, i.e. the solution space is empty. This
+happens if there are constraints that contradict each other.
+"""
+INFEASIBLE = 1
+
+"""
+The problem is unbounded.
+"""
+UNBOUNDED = 2
+
+"""
+There is an entire edge along which the solution is optimal. The edge is
+described by the two points (x1, y1) - (x2, y2).
+"""
+EDGE = 3
+
+"""
+The solution is a single point stored in (x1, y1).
+"""
+POINT = 4
 
