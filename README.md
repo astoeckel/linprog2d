@@ -1,6 +1,6 @@
 # linprog2d ‒ Linear Programming Solver for 2D Problems
 
-`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). The library can be compiled to JavaScript/WebAssembly and embedded in web applications (4.9kiB gzipped).
+`liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). The library can be compiled to JavaScript/WebAssembly and embedded in web applications (4.9kiB gzipped) or called from Python using the provided Python package.
 
 **[Launch interactive demo](https://rawgit.com/astoeckel/linprog2d/master/examples/linprog2d_interactive.html)**.
 
@@ -69,6 +69,24 @@ linprog2d.init().then((solve) => {
 		console.log('x =', res.x1, ' y = ', res.y1);
 	}
 });
+```
+
+### Python
+
+Make sure the `liblinprog2d.so` is in your library search path (either by setting the environment variable `LD_LIBRARY_PATH` accordingly or installing `liblinprog2d.so` to `/usr/share/local/lib/`). Install the `linprog2d` Python package by executing the following in the `linprog2d` directory:
+```sh
+pip3 install .
+```
+You can use the library as follows:
+```python
+import linprog2d
+
+Gx = [1.0, 0.0,  -1.0,   -8.0,   -4.0];
+Gy = [0.0, 1.0,   0.0,   -8.0,  -12.0];
+h  = [0.0, 0.0, -15.0, -160.0, -180.0];
+res = linprog2d.solve(-5.0, -10.0, Gx, Gy, h)
+if res.status == linprog2d.STATUS_POINT:
+    print("x =", res.x1, "y =", res.y1)
 ```
 
 ## How to build

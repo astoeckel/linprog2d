@@ -37,8 +37,7 @@ int main() {
 	   functions that allow to perform manual memory management. */
 	const double cx = -5.0;
 	const double cy = -10.0;
-	linprog2d_result_t res =
-	    linprog2d_solve_simple(cx, cy, Gx, Gy, h, 5U);
+	linprog2d_result_t res = linprog2d_solve_simple(cx, cy, Gx, Gy, h, 5U);
 
 	/* Print the solution */
 	if (res.status == LP2D_POINT) {

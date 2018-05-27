@@ -5,3 +5,6 @@
 *.vgcore
 .gdb_history
 build
+*.egg-info
+__pycache__
+*.pyc
