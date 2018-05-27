@@ -877,24 +877,27 @@ static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
                                                    const unsigned int *idcs,
                                                    unsigned int idcs_len,
                                                    unsigned int if0,
-                                                   double mx) {
-	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h;
+                                                   unsigned int if0, double mx,
+                                                   bool_t is_ceil) {
+	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h, *dx = prog->dx;
 	double rx1, ry1;
 	unsigned int i;
 
 	/* Iterate over all floor and ceiling constraints and calculate the
 	   intersection with our ceiling constraint. */
 	for (i = 0; i < idcs_len; i++) {
-		unsigned int i1 = idcs[i];
-		if (i1 == if0) { /* Skip self-itersections */
+		unsigned int j = idcs[i];
+		if (j == if0) { /* Skip self-itersections */
 			continue;
 		}
-		if (linprog2d_calculate_intersect(Gx[if0], Gy[if0], h[if0], Gx[i1],
-		                                  Gy[i1], h[i1], &rx1, &ry1)) {
-			if (rx1 < mx && rx1 > prog->x0) {
+		if (linprog2d_calculate_intersect(Gx[if0], Gy[if0], h[if0], Gx[j],
+		                                  Gy[j], h[j], &rx1, &ry1)) {
+			if (((is_ceil && dx[j] > 0.0) || (!is_ceil && dx[j] < 0.0)) &&
+			    rx1 > prog->x0) {
 				prog->x0 = rx1;
 			}
-			if (rx1 > mx && rx1 < prog->x1) {
+			if (((is_ceil && dx[j] < 0.0) || (!is_ceil && dx[j] > 0.0)) &&
+			    rx1 < prog->x1) {
 				prog->x1 = rx1;
 			}
 		}
@@ -925,9 +928,9 @@ static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog,
 	/* Calculate all intersections between if0 and the ceil/floor constraints,
 	   update prog->x0, prog->x1 accordingly */
 	linprog2d_calculate_edge_intersections(prog, prog->ceil, prog->ceil_len,
-	                                       if0, mx);
+	                                       if0, mx, TRUE);
 	linprog2d_calculate_edge_intersections(prog, prog->floor, prog->floor_len,
-	                                       if0, mx);
+	                                       if0, mx, FALSE);
 
 	/* Return the actual edge */
 	return linprog2d_result_edge(&(prog->R), &(prog->o), prog->x0, ry0,
