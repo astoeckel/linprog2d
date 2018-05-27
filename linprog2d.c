@@ -876,7 +876,6 @@ static int linprog2d_locate_optimum(linprog2d_data_t *prog, double mx,
 static void linprog2d_calculate_edge_intersections(linprog2d_data_t *prog,
                                                    const unsigned int *idcs,
                                                    unsigned int idcs_len,
-                                                   unsigned int if0,
                                                    unsigned int if0, double mx,
                                                    bool_t is_ceil) {
 	const double *Gx = prog->Gx, *Gy = prog->Gy, *h = prog->h, *dx = prog->dx;
@@ -1098,7 +1097,8 @@ linprog2d_size_t linprog2d_mem_size(unsigned int capacity) {
 
 	/* Space for the Gx, Gy, h, dx, y0, x_intersect lists plus alignment. The
 	   x_intersect list only has half the length. */
-	res += (sizeof(double) * 5UL + sizeof(double) / 2UL) * capacity + 64UL * 6UL;
+	res +=
+	    (sizeof(double) * 5UL + sizeof(double) / 2UL) * capacity + 64UL * 6UL;
 
 	/* Space for the ceil, floor, tmp lists plus alignment. */
 	res += sizeof(unsigned int) * 3UL * capacity + 64UL * 3UL;
