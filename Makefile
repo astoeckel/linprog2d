@@ -16,7 +16,7 @@
 
 .PHONY: all test clean cov wasm dist
 
-CCFLAGS := -g -L build/ -I . -fPIC --std=c89 -Wall -Wextra -pedantic-errors
+CCFLAGS := -O3 -s -L build/ -I . -fPIC --std=c89 -Wall -Wextra -pedantic-errors
 
 all: build/liblinprog2d.a build/liblinprog2d.so \
      build/example/linprog2d_simple \
