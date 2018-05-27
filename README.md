@@ -1,6 +1,7 @@
 # linprog2d ‒ Linear Programming Solver for 2D Problems
 
 [![Build Status](https://travis-ci.org/astoeckel/linprog2d.svg?branch=master)](https://travis-ci.org/astoeckel/linprog2d)
+[![Coverage Status](https://coveralls.io/repos/github/astoeckel/linprog2d/badge.svg?branch=master)](https://coveralls.io/github/astoeckel/linprog2d?branch=master)
 
 `liblinprog2d` is a small C library for solving two-dimensional linear programming problems in linear time (with respect to the number of constraints). The library can be compiled to JavaScript/WebAssembly and embedded in web applications (4.9kiB gzipped) or called from Python using the provided Python package.
 

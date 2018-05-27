@@ -7,4 +7,4 @@ before_install:
 script: make test
 after_success:
   - make cov
-  - coveralls --exclude test
+  - coveralls --exclude test --exclude examples
