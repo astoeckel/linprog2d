@@ -931,7 +931,9 @@ static linprog2d_result_t linprog2d_calculate_edge(linprog2d_data_t *prog) {
 	                                       if0, FALSE);
 
 	/* Check whether the result is just a point on the edge */
-	if (feq_(prog->x0, prog->x1)) {
+	if ((prog->x0 <= -HUGE_VAL) || (prog->x1 >= HUGE_VAL)) {
+		return linprog2d_result_unbounded();
+	} else if (feq_(prog->x0, prog->x1)) {
 		return linprog2d_result_point(&(prog->R), &(prog->o), prog->x0, ry0);
 	} else {
 		/* Return the actual edge */
